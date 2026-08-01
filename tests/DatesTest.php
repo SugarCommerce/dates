@@ -31,6 +31,30 @@ final class DatesTest extends TestCase {
 
 	/* ─── Clock ─────────────────────────────────────────────────────── */
 
+	/**
+	 * The 45-59 second window used to fall through every unit — the
+	 * smallest is the minute — and come back out of the fallback as
+	 * "0 minutes ago".
+	 */
+	public function test_no_delta_ever_reads_as_zero_of_a_unit(): void {
+		for ( $seconds = 0; $seconds <= 3700; $seconds += 7 ) {
+			// Anchored: "10 minutes ago" legitimately contains "0 minute".
+			$this->assertSame(
+				0,
+				preg_match( '/\b0 (second|minute|hour|day|week|month|year)/', Relative::phrase( $seconds ) ),
+				$seconds . ' seconds rendered a zero count.'
+			);
+		}
+	}
+
+	public function test_under_a_minute_is_just_now(): void {
+		foreach ( array( 0, 1, 30, 44, 45, 59 ) as $seconds ) {
+			$this->assertSame( 'just now', Relative::phrase( $seconds ) );
+		}
+
+		$this->assertSame( '1 minute ago', Relative::phrase( 60 ) );
+	}
+
 	public function test_a_frozen_clock_does_not_move(): void {
 		$clock = $this->clock();
 

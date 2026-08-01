@@ -90,7 +90,11 @@ final readonly class Relative {
 		$future   = $delta < 0;
 		$absolute = abs( $delta );
 
-		if ( $absolute < 45 ) {
+		// Anything under a minute is "just now". The threshold has to be
+		// 60 rather than 45: the smallest unit below is the minute, so a
+		// 45-second delta fell through every unit and came back out of
+		// the fallback as "0 minutes ago".
+		if ( $absolute < 60 ) {
 			return 'just now';
 		}
 
@@ -105,7 +109,10 @@ final readonly class Relative {
 			return $future ? 'in ' . $label : $label . ' ago';
 		}
 
-		$count = (int) floor( $absolute / 60 );
+		// Unreachable while the smallest unit is the minute and anything
+		// below one is handled above, but a count of zero must never be
+		// printable.
+		$count = max( 1, (int) floor( $absolute / 60 ) );
 		$label = $count . ' minute' . ( 1 === $count ? '' : 's' );
 
 		return $future ? 'in ' . $label : $label . ' ago';
