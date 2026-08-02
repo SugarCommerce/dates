@@ -27,13 +27,13 @@ PHP 8.5+
 ## Installation
 
 ```bash
-composer require sugarmill/dates
+composer require sugarcommerce/dates
 ```
 
 ## Usage
 
 ```php
-use SugarMill\Dates\{Clock, Preset, Timestamp};
+use Sugar\Dates\{Clock, Preset, Timestamp};
 
 $range = Preset::Last30Days->range();
 
@@ -88,7 +88,7 @@ Column names are validated against a strict pattern and throw if they don't matc
 For a chart:
 
 ```php
-use SugarMill\Dates\Interval;
+use Sugar\Dates\Interval;
 
 [ $sql, $bindings ] = $range->series_query(
     'orders',
@@ -115,7 +115,7 @@ $last_month = $this_month->previous();   // same length, immediately before
 ### Relative times
 
 ```php
-use SugarMill\Dates\Relative;
+use Sugar\Dates\Relative;
 
 Relative::format( '2026-07-31 09:00:00' );        // '1 day ago'
 Relative::with_title( '2026-07-31 09:00:00' );    // ['label' => …, 'title' => '… UTC']
@@ -126,7 +126,7 @@ The pair is for a UI: the phrase reads well, and the absolute timestamp goes in 
 ### Parsing and formatting
 
 ```php
-use SugarMill\Dates\Timestamp;
+use Sugar\Dates\Timestamp;
 
 Timestamp::parse( $value );      // ?DateTimeImmutable — null, not an exception
 Timestamp::to_unix( $value );    // ?int
