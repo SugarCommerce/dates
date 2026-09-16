@@ -6,7 +6,7 @@
  * boundaries — month ends, leap days, daylight-saving transitions — and
  * those cannot be reached from a suite that waits for the real clock.
  *
- * @package   Sugar\Dates
+ * @package   SugarCommerce\Dates
  * @copyright Copyright (c) 2026, ArrayPress Limited
  * @license   GPL-2.0-or-later
  * @since     1.0.0
@@ -14,11 +14,11 @@
 
 declare( strict_types=1 );
 
-namespace Sugar\Dates\Tests;
+namespace SugarCommerce\Dates\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Sugar\Dates\{Clock, Interval, Preset, Range, Relative, Timestamp};
+use SugarCommerce\Dates\{Clock, Interval, Preset, Range, Relative, Timestamp};
 
 final class DatesTest extends TestCase {
 

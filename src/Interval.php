@@ -2,7 +2,7 @@
 /**
  * Bucket sizes for grouping a range.
  *
- * @package   Sugar\Dates
+ * @package   SugarCommerce\Dates
  * @copyright Copyright (c) 2026, ArrayPress Limited
  * @license   GPL-2.0-or-later
  * @since     1.0.0
@@ -10,7 +10,7 @@
 
 declare( strict_types=1 );
 
-namespace Sugar\Dates;
+namespace SugarCommerce\Dates;
 
 /**
  * Enum Interval
