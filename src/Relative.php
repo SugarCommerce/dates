@@ -31,7 +31,7 @@ final readonly class Relative {
 	/**
 	 * Seconds per unit, largest first.
 	 */
-	private const UNITS = array(
+	private const array UNITS = array(
 		'year'   => 31536000,
 		'month'  => 2592000,
 		'week'   => 604800,
