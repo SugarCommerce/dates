@@ -556,4 +556,188 @@ final class DatesTest extends TestCase {
 		$this->assertCount( count( Preset::cases() ), Preset::options() );
 		$this->assertSame( 'Last 30 days', Preset::options()['last_30'] );
 	}
+
+	/* ─── Typed dates ───────────────────────────────────────────────── */
+
+	public function test_a_typed_date_is_midnight_utc(): void {
+		$this->assertSame( strtotime( '2026-03-31 00:00:00 UTC' ), Timestamp::from_date( '2026-03-31' ) );
+		$this->assertSame( strtotime( '2026-03-31 00:00:00 UTC' ), Timestamp::from_date( '  2026-03-31 ' ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function not_dates(): array {
+		return array(
+			'the thirtieth of February' => array( '2026-02-30' ),
+			'a leap day in a common year' => array( '2026-02-29' ),
+			'the thirteenth month'      => array( '2026-13-01' ),
+			'a relative phrase'         => array( 'next friday' ),
+			'a slashed date'            => array( '11/12/2026' ),
+			'a date with a time'        => array( '2026-03-31 12:00:00' ),
+			'an unpadded month'         => array( '2026-3-31' ),
+			'nothing'                   => array( '' ),
+		);
+	}
+
+	#[DataProvider( 'not_dates' )]
+	public function test_anything_but_a_real_calendar_date_is_refused( string $value ): void {
+		$this->assertNull( Timestamp::from_date( $value ) );
+		$this->assertNull( Timestamp::end_of_day( $value ) );
+	}
+
+	public function test_a_leap_day_in_a_leap_year_is_a_date(): void {
+		$this->assertSame( strtotime( '2028-02-29 00:00:00 UTC' ), Timestamp::from_date( '2028-02-29' ) );
+	}
+
+	public function test_the_end_of_a_day_is_its_last_second(): void {
+		$this->assertSame( strtotime( '2026-03-31 23:59:59 UTC' ), Timestamp::end_of_day( '2026-03-31' ) );
+	}
+
+	/**
+	 * 29 March 2026 is 23 hours long in London: start + 86399 would land
+	 * an hour into the 30th.
+	 */
+	public function test_the_end_of_a_short_daylight_saving_day_is_still_that_day(): void {
+		$end = Timestamp::end_of_day( '2026-03-29', 'Europe/London' );
+
+		$this->assertSame( strtotime( '2026-03-29 22:59:59 UTC' ), $end );
+		$this->assertSame( 23 * 3600 - 1, $end - Timestamp::from_date( '2026-03-29', 'Europe/London' ) );
+	}
+
+	public function test_the_end_of_a_long_daylight_saving_day_is_still_that_day(): void {
+		$end = Timestamp::end_of_day( '2026-10-25', 'Europe/London' );
+
+		$this->assertSame( 25 * 3600 - 1, $end - Timestamp::from_date( '2026-10-25', 'Europe/London' ) );
+	}
+
+	public function test_an_unknown_zone_reads_as_utc(): void {
+		$this->assertSame( Timestamp::from_date( '2026-03-31' ), Timestamp::from_date( '2026-03-31', 'Mars/Olympus' ) );
+	}
+
+	/* ─── Localised dates ───────────────────────────────────────────── */
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function localised(): array {
+		return array(
+			'German'                => array( 'de', '5. Oktober 2026' ),
+			'Brazilian, hyphenated' => array( 'pt-BR', '5 de outubro de 2026' ),
+			'Brazilian, ICU form'   => array( 'pt_BR', '5 de outubro de 2026' ),
+			'Japanese'              => array( 'ja', '2026年10月5日' ),
+		);
+	}
+
+	#[DataProvider( 'localised' )]
+	public function test_a_date_is_written_the_way_its_language_writes_one( string $locale, string $expected ): void {
+		if ( ! class_exists( \IntlDateFormatter::class ) ) {
+			$this->markTestSkipped( 'ext-intl is not loaded.' );
+		}
+
+		$this->assertSame( $expected, Timestamp::format_localized( (int) strtotime( '2026-10-05 12:00:00 UTC' ), $locale ) );
+	}
+
+	public function test_a_localised_date_is_shown_in_the_zone_asked_for(): void {
+		if ( ! class_exists( \IntlDateFormatter::class ) ) {
+			$this->markTestSkipped( 'ext-intl is not loaded.' );
+		}
+
+		// 23:30 UTC on the 5th is already the 6th in Tokyo.
+		$this->assertSame( '2026年10月6日', Timestamp::format_localized( (int) strtotime( '2026-10-05 23:30:00 UTC' ), 'ja', 'Asia/Tokyo' ) );
+	}
+
+	public function test_a_locale_icu_cannot_use_still_gives_a_date(): void {
+		$this->assertNotSame( '', Timestamp::format_localized( (int) strtotime( '2026-10-05 12:00:00 UTC' ), '' ) );
+	}
+
+	/* ─── Relative parts ────────────────────────────────────────────── */
+
+	public function test_parts_name_the_unit_and_count(): void {
+		$this->assertSame( array( 'unit' => 'day', 'count' => 3, 'future' => false ), Relative::parts( 3 * 86400 + 5 ) );
+		$this->assertSame( array( 'unit' => 'week', 'count' => 2, 'future' => true ), Relative::parts( -15 * 86400 ) );
+		$this->assertSame( array( 'unit' => 'minute', 'count' => 1, 'future' => false ), Relative::parts( 60 ) );
+	}
+
+	public function test_under_a_minute_has_no_parts(): void {
+		$this->assertNull( Relative::parts( 0 ) );
+		$this->assertNull( Relative::parts( 59 ) );
+		$this->assertNull( Relative::parts( -59 ) );
+	}
+
+	public function test_parts_and_phrase_agree_everywhere(): void {
+		for ( $delta = -40_000_000; $delta <= 40_000_000; $delta += 99_991 ) {
+			$parts = Relative::parts( $delta );
+
+			if ( null === $parts ) {
+				$this->assertSame( 'just now', Relative::phrase( $delta ) );
+				continue;
+			}
+
+			$this->assertStringContainsString( $parts['count'] . ' ' . $parts['unit'], Relative::phrase( $delta ) );
+			$this->assertSame( $parts['future'], str_starts_with( Relative::phrase( $delta ), 'in ' ) );
+		}
+	}
+
+	/* ─── Unix-time columns ─────────────────────────────────────────── */
+
+	public function test_an_epoch_column_groups_through_unixepoch(): void {
+		$this->assertSame( "strftime('%Y-%m-%d', date_created, 'unixepoch')", Interval::Day->group_expression( 'date_created', 'sqlite', true ) );
+		$this->assertSame( "DATE_FORMAT(FROM_UNIXTIME(date_created), '%Y-%m')", Interval::Month->group_expression( 'date_created', 'mysql', true ) );
+	}
+
+	public function test_an_epoch_range_binds_integers(): void {
+		$range = Range::between( '2026-05-01 00:00:00', '2026-06-01 00:00:00' );
+
+		[ $sql, $bindings ] = $range->where_epoch( 'o.date_created', 'r_' );
+
+		$this->assertSame( 'o.date_created >= :r_from AND o.date_created < :r_to', $sql );
+		$this->assertSame( array( 'r_from' => strtotime( '2026-05-01 UTC' ), 'r_to' => strtotime( '2026-06-01 UTC' ) ), $bindings );
+	}
+
+	public function test_an_epoch_series_query_groups_and_binds_as_unix(): void {
+		[ $sql, $bindings ] = Range::between( '2026-05-01 00:00:00', '2026-06-01 00:00:00' )
+			->series_query( 'orders', 'date_created', Interval::Day, epoch: true );
+
+		$this->assertStringContainsString( "strftime('%Y-%m-%d', date_created, 'unixepoch') AS bucket", $sql );
+		$this->assertIsInt( $bindings['from'] );
+	}
+
+	/**
+	 * The point of the flag: keys from a real query on an integer column
+	 * are the keys fill() looks for.
+	 */
+	public function test_an_epoch_series_fills_from_a_real_query(): void {
+		if ( ! extension_loaded( 'pdo_sqlite' ) ) {
+			$this->markTestSkipped( 'pdo_sqlite is not loaded.' );
+		}
+
+		$pdo = new \PDO( 'sqlite::memory:' );
+		$pdo->exec( 'CREATE TABLE orders ( date_created INTEGER )' );
+
+		foreach ( array( '2026-07-13 09:00', '2026-07-13 18:00', '2026-07-15 01:00', '2026-07-01 00:00' ) as $at ) {
+			$pdo->exec( 'INSERT INTO orders VALUES ( ' . strtotime( $at . ' UTC' ) . ' )' );
+		}
+
+		$range = Range::last_days( 3, $this->clock() );
+
+		[ $sql, $bindings ] = $range->series_query( 'orders', 'date_created', Interval::Day, epoch: true );
+
+		$statement = $pdo->prepare( $sql );
+		$statement->execute( $bindings );
+
+		$counts = array_column( $statement->fetchAll( \PDO::FETCH_ASSOC ), 'count', 'bucket' );
+		$filled = $range->fill( array_map( 'intval', $counts ), Interval::Day );
+
+		$this->assertSame( array( '2026-07-13', '2026-07-14', '2026-07-15' ), array_column( $filled, 'key' ) );
+		$this->assertSame( array( 2, 0, 1 ), array_column( $filled, 'value' ) );
+	}
+
+	public function test_the_last_days_include_today_whole(): void {
+		$range = Range::last_days( 30, $this->clock() );
+
+		$this->assertSame( array( '2026-06-16 00:00:00', '2026-07-16 00:00:00' ), $range->to_array() );
+		$this->assertSame( Preset::Last30DaysToDate->range( $this->clock() )->to_array(), $range->to_array() );
+		$this->assertSame( 1, Range::last_days( 0, $this->clock() )->days() );
+	}
 }

@@ -16,8 +16,10 @@ Two things go wrong with dates in an application that reports on itself.
 - 🌍 **UTC throughout** — store UTC, convert at the edge, never in between.
 - 📅 **15 reporting presets** — today through last year, each returning a half-open range.
 - 🔍 **Safe parsing** — returns null instead of throwing or guessing.
+- ✍️ **Strict typed dates** — `2026-02-30` is no date, not 2 March; the end of a day is right on a 23-hour day.
+- 🗣️ **Localised dates** — "5. Oktober 2026" through ext-intl, ISO 8601 without it.
 - 💬 **Relative phrasing** — "3 hours ago", with an absolute timestamp for the tooltip.
-- 📊 **Series queries** — SQL for a bucketed chart, for SQLite and MySQL, with gap filling.
+- 📊 **Series queries** — SQL for a bucketed chart, for SQLite and MySQL, with gap filling, on date-time or Unix-integer columns.
 - ↔️ **Comparable periods** — `previous()` gives the immediately preceding window of the same length.
 
 ## Requirements
@@ -103,6 +105,23 @@ $series = $range->fill( $rows, Interval::Day );  // every bucket present, gaps z
 
 `fill()` matters more than it looks: a chart built straight from grouped rows skips days with no orders, which turns a flat week into a misleading spike.
 
+#### Unix-time columns
+
+A column of integers needs saying so. SQLite's `strftime()` reads a bare number as a Julian day — every bucket lands thousands of years ago, without an error — and comparing an integer column with the date strings `where()` binds follows SQLite's type ordering, so it matches everything or nothing.
+
+```php
+$range = Range::last_days( 30 );              // midnight 29 days ago → midnight tonight
+
+[ $where, $bindings ] = $range->where_epoch( 'date_created' );   // binds ints
+Interval::Day->group_expression( 'date_created', 'sqlite', epoch: true );
+// strftime('%Y-%m-%d', date_created, 'unixepoch')
+
+[ $sql, $bindings ] = $range->series_query( 'orders', 'date_created', Interval::Day, epoch: true );
+$series = $range->fill( $counts_by_bucket, Interval::Day );
+```
+
+The keys are the same as for a text column, so `fill()` works on either. On MySQL the epoch form goes through `FROM_UNIXTIME()`, which uses the session time zone: set it to UTC.
+
 > The `$selects` argument is interpolated into the statement. It is for aggregate expressions you wrote, never for anything that came from a request.
 
 ### Comparisons
@@ -123,6 +142,15 @@ Relative::with_title( '2026-07-31 09:00:00' );    // ['label' => …, 'title' =>
 
 The pair is for a UI: the phrase reads well, and the absolute timestamp goes in the `title` attribute so precision is one hover away.
 
+The phrases are English. To translate them, take the choice without the words:
+
+```php
+Relative::parts( 3 * 86400 );   // ['unit' => 'day', 'count' => 3, 'future' => false]
+Relative::parts( 30 );          // null — "just now"
+```
+
+and pick a translated sentence per unit and count. "{count} {unit} ago" cannot be translated as one template — the unit inflects with the count in most languages — and asking `parts()` keeps the translated phrase and the English one agreeing about where three weeks becomes a month.
+
 ### Parsing and formatting
 
 ```php
@@ -138,6 +166,29 @@ Timestamp::is_past( $value );
 
 `parse()` returning null rather than throwing is deliberate: a date column read from a database is routinely empty, malformed, or `0000-00-00`, and none of those deserve an exception.
 
+### Typed dates
+
+A date typed into a form is where a lenient parse does damage: `DateTimeImmutable` reads `2026-02-30` as 2 March and "next friday" as whichever Friday is next, and nobody sees the error.
+
+```php
+Timestamp::from_date( '2026-03-31' );                 // midnight UTC that day
+Timestamp::from_date( '2026-02-30' );                 // null — no such day
+Timestamp::end_of_day( '2026-03-31' );                // 23:59:59 that day, for "until 31 March"
+Timestamp::end_of_day( '2026-03-29', 'Europe/London' ); // right on a 23-hour day
+```
+
+Strict `YYYY-MM-DD`, round-tripped: a value that does not print back as what was typed is null. The end of a day is the next midnight less a second, not the start plus 86,399, because a day with a clock change is not 86,400 seconds long.
+
+### Localised dates
+
+```php
+Timestamp::format_localized( $unix, 'de' );      // '5. Oktober 2026'
+Timestamp::format_localized( $unix, 'pt-BR' );   // '5 de outubro de 2026'
+Timestamp::format_localized( $unix, 'ja', 'Asia/Tokyo' );
+```
+
+The long date style, without a time. Needs ext-intl; without it the fallback format (ISO 8601 by default) is used, which every reader can parse.
+
 ## Storage
 
 Store UTC. Convert on display, using the viewer's timezone, and never store the result.
@@ -151,7 +202,7 @@ composer install
 composer test
 ```
 
-84 tests, run entirely against a frozen clock — including the leap year, the DST boundaries, and the month-end arithmetic that breaks naive `-1 month` maths.
+114 tests, run entirely against a frozen clock — including the leap year, the DST boundaries, and the month-end arithmetic that breaks naive `-1 month` maths; typed dates that do not exist, the end of 23- and 25-hour days, localised dates in four languages, relative parts agreeing with the English phrase across ±15 months, and an epoch series run against a real SQLite table and filled.
 
 ## License
 
