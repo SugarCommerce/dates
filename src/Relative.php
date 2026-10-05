@@ -87,7 +87,35 @@ final readonly class Relative {
 	 * @return string
 	 */
 	public static function phrase( int $delta ): string {
-		$future   = $delta < 0;
+		$parts = self::parts( $delta );
+
+		if ( null === $parts ) {
+			return 'just now';
+		}
+
+		$label = $parts['count'] . ' ' . $parts['unit'] . ( 1 === $parts['count'] ? '' : 's' );
+
+		return $parts['future'] ? 'in ' . $label : $label . ' ago';
+	}
+
+	/**
+	 * The unit and count a second count is described in, without the words.
+	 *
+	 * For an application that translates. "{count} {unit} ago" cannot be
+	 * translated as a template — the unit inflects with the count in most
+	 * languages and the word order differs in the rest — so a translated
+	 * phrase is chosen per unit and per count, and this is the choice
+	 * phrase() makes, so the two never disagree about where "3 weeks"
+	 * becomes "1 month".
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int $delta Seconds elapsed. Negative means the future.
+	 *
+	 * @return array{unit: string, count: int, future: bool}|null Null under
+	 *         a minute, which reads as "just now".
+	 */
+	public static function parts( int $delta ): ?array {
 		$absolute = abs( $delta );
 
 		// Anything under a minute is "just now". The threshold has to be
@@ -95,27 +123,19 @@ final readonly class Relative {
 		// 45-second delta fell through every unit and came back out of
 		// the fallback as "0 minutes ago".
 		if ( $absolute < 60 ) {
-			return 'just now';
+			return null;
 		}
 
 		foreach ( self::UNITS as $unit => $seconds ) {
-			if ( $absolute < $seconds ) {
-				continue;
+			if ( $absolute >= $seconds ) {
+				return array( 'unit' => $unit, 'count' => (int) floor( $absolute / $seconds ), 'future' => $delta < 0 );
 			}
-
-			$count = (int) floor( $absolute / $seconds );
-			$label = $count . ' ' . $unit . ( 1 === $count ? '' : 's' );
-
-			return $future ? 'in ' . $label : $label . ' ago';
 		}
 
 		// Unreachable while the smallest unit is the minute and anything
 		// below one is handled above, but a count of zero must never be
 		// printable.
-		$count = max( 1, (int) floor( $absolute / 60 ) );
-		$label = $count . ' minute' . ( 1 === $count ? '' : 's' );
-
-		return $future ? 'in ' . $label : $label . ' ago';
+		return array( 'unit' => 'minute', 'count' => max( 1, (int) floor( $absolute / 60 ) ), 'future' => $delta < 0 );
 	}
 
 	/**
