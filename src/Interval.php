@@ -75,25 +75,36 @@ enum Interval: string {
 	/**
 	 * A `GROUP BY` expression for a column.
 	 *
+	 * A column of Unix integers needs `$epoch`: SQLite's strftime() reads
+	 * a bare number as a Julian day, so without the `unixepoch` modifier
+	 * every bucket lands thousands of years ago rather than raising an
+	 * error. The keys come out the same as for a text column, so fill()
+	 * works on either.
+	 *
 	 * @since 1.0.0
+	 * @since 1.1.0 The `$epoch` flag.
 	 *
 	 * @param string $column Column holding a UTC timestamp.
 	 * @param string $driver `sqlite` or `mysql`.
+	 * @param bool   $epoch  Whether the column holds Unix seconds rather
+	 *                       than a date-time string. On MySQL this goes
+	 *                       through FROM_UNIXTIME(), which uses the session
+	 *                       time zone: set it to UTC.
 	 *
 	 * @return string
 	 *
 	 * @throws \InvalidArgumentException On an unsafe column name or an
 	 *                                   unknown driver.
 	 */
-	public function group_expression( string $column, string $driver = 'sqlite' ): string {
+	public function group_expression( string $column, string $driver = 'sqlite', bool $epoch = false ): string {
 		// Interpolated into SQL, so validated rather than escaped.
 		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*$/', $column ) ) {
 			throw new \InvalidArgumentException( 'Unsafe column name: ' . $column );
 		}
 
 		return match ( strtolower( $driver ) ) {
-			'sqlite' => "strftime('" . $this->sqlite_format() . "', " . $column . ')',
-			'mysql'  => "DATE_FORMAT(" . $column . ", '" . $this->mysql_format() . "')",
+			'sqlite' => "strftime('" . $this->sqlite_format() . "', " . $column . ( $epoch ? ", 'unixepoch'" : '' ) . ')',
+			'mysql'  => "DATE_FORMAT(" . ( $epoch ? 'FROM_UNIXTIME(' . $column . ')' : $column ) . ", '" . $this->mysql_format() . "')",
 			default  => throw new \InvalidArgumentException( 'Unknown driver: ' . $driver ),
 		};
 	}

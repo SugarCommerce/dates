@@ -62,6 +62,27 @@ final readonly class Range {
 	}
 
 	/**
+	 * The last few whole days, today included.
+	 *
+	 * The window behind a "last 30 days" chart: from midnight UTC at the
+	 * start of the first day to midnight at the end of today, so the first
+	 * bar is a whole day rather than whatever was left of it at this hour,
+	 * and today's bar is today. Preset::Last30DaysToDate for any length.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int        $days  How many days, at least one.
+	 * @param Clock|null $clock Source of now.
+	 *
+	 * @return self
+	 */
+	public static function last_days( int $days, ?Clock $clock = null ): self {
+		$tomorrow = ( $clock ?? new Clock() )->utc()->setTime( 0, 0 )->modify( '+1 day' );
+
+		return new self( $tomorrow->modify( '-' . max( 1, $days ) . ' days' ), $tomorrow );
+	}
+
+	/**
 	 * The start, in storage format.
 	 *
 	 * @since 1.0.0
@@ -185,12 +206,40 @@ final readonly class Range {
 	}
 
 	/**
+	 * A `WHERE` fragment for a column of Unix seconds.
+	 *
+	 * The same exclusive-end comparison as where(), bound as integers.
+	 * Comparing an integer column with the formatted strings where() binds
+	 * is not an error in SQLite — it is a type-ordering rule under which
+	 * every integer sorts before every string, so the query silently
+	 * matches everything or nothing.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $column Column holding Unix seconds.
+	 * @param string $prefix Placeholder prefix.
+	 *
+	 * @return array{0: string, 1: array<string, int>} SQL and bindings.
+	 *
+	 * @throws \InvalidArgumentException On an unsafe column name.
+	 */
+	public function where_epoch( string $column, string $prefix = '' ): array {
+		[ $sql ] = $this->where( $column, $prefix );
+
+		return array(
+			$sql,
+			array( $prefix . 'from' => $this->from->getTimestamp(), $prefix . 'to' => $this->to->getTimestamp() ),
+		);
+	}
+
+	/**
 	 * A complete `SELECT` for a grouped time series.
 	 *
 	 * Returns the statement and its bindings for "count and sum, bucketed
 	 * by day" and similar — the query behind every dashboard chart.
 	 *
 	 * @since 1.0.0
+	 * @since 1.1.0 The `$epoch` flag.
 	 *
 	 * @param string   $table    Table name.
 	 * @param string   $column   Timestamp column to group and filter on.
@@ -198,8 +247,9 @@ final readonly class Range {
 	 * @param string[] $selects  Extra aggregate expressions, e.g.
 	 *                           `array( 'SUM(total) AS revenue' )`.
 	 * @param string   $driver   `sqlite` or `mysql`.
+	 * @param bool     $epoch    Whether the column holds Unix seconds.
 	 *
-	 * @return array{0: string, 1: array<string, string>}
+	 * @return array{0: string, 1: array<string, string|int>}
 	 *
 	 * @throws \InvalidArgumentException On an unsafe identifier.
 	 */
@@ -208,15 +258,16 @@ final readonly class Range {
 		string $column,
 		Interval $interval,
 		array $selects = array(),
-		string $driver = 'sqlite'
+		string $driver = 'sqlite',
+		bool $epoch = false
 	): array {
 		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*$/', $table ) ) {
 			throw new \InvalidArgumentException( 'Unsafe table name: ' . $table );
 		}
 
-		[ $where, $bindings ] = $this->where( $column );
+		[ $where, $bindings ] = $epoch ? $this->where_epoch( $column ) : $this->where( $column );
 
-		$bucket  = $interval->group_expression( $column, $driver );
+		$bucket  = $interval->group_expression( $column, $driver, $epoch );
 		$columns = array_merge( array( $bucket . ' AS bucket', 'COUNT(*) AS count' ), $selects );
 
 		$sql = 'SELECT ' . implode( ', ', $columns )
