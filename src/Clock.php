@@ -29,6 +29,8 @@ namespace SugarCommerce\Dates;
 final readonly class Clock {
 
 	/**
+	 * A clock reading real time, or frozen at a moment.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param int|null $fixed Frozen Unix timestamp, or null for the real

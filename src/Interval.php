@@ -26,11 +26,17 @@ namespace SugarCommerce\Dates;
  */
 enum Interval: string {
 
+	/** By the hour. */
 	case Hour    = 'hour';
+	/** By the calendar day. */
 	case Day     = 'day';
+	/** By the ISO week, Monday first. */
 	case Week    = 'week';
+	/** By the calendar month. */
 	case Month   = 'month';
+	/** By the calendar quarter, starting January, April, July and October. */
 	case Quarter = 'quarter';
+	/** By the calendar year. */
 	case Year    = 'year';
 
 	/**
@@ -98,7 +104,7 @@ enum Interval: string {
 	 */
 	public function group_expression( string $column, string $driver = 'sqlite', bool $epoch = false ): string {
 		// Interpolated into SQL, so validated rather than escaped.
-		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*$/', $column ) ) {
+		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*\z/', $column ) ) {
 			throw new \InvalidArgumentException( 'Unsafe column name: ' . $column );
 		}
 

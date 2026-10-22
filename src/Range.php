@@ -28,6 +28,20 @@ namespace SugarCommerce\Dates;
 final readonly class Range {
 
 	/**
+	 * The longest window last_days() builds, in days: a little over
+	 * 2,700 years, far beyond any real report and far inside what
+	 * DateTime holds.
+	 *
+	 * @since 1.2.0
+	 */
+	public const int MAX_DAYS = 1_000_000;
+
+	/**
+	 * A range between two moments, taken as given.
+	 *
+	 * Use between() for stored strings, which also puts the ends in
+	 * order.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param \DateTimeImmutable $from Inclusive start.
@@ -71,7 +85,9 @@ final readonly class Range {
 	 *
 	 * @since 1.1.0
 	 *
-	 * @param int        $days  How many days, at least one.
+	 * @param int        $days  How many days, from one to MAX_DAYS. Out
+	 *                          of range is clamped, since the count
+	 *                          often arrives as `?days=`.
 	 * @param Clock|null $clock Source of now.
 	 *
 	 * @return self
@@ -79,8 +95,13 @@ final readonly class Range {
 	public static function last_days( int $days, ?Clock $clock = null ): self {
 		$tomorrow = ( $clock ?? new Clock() )->utc()->setTime( 0, 0 )->modify( '+1 day' );
 
-		return new self( $tomorrow->modify( '-' . max( 1, $days ) . ' days' ), $tomorrow );
+		// Unclamped, a huge count overflows inside modify() and wraps
+		// to a start date millions of years in the future.
+		$days = max( 1, min( self::MAX_DAYS, $days ) );
+
+		return new self( $tomorrow->modify( '-' . $days . ' days' ), $tomorrow );
 	}
+
 
 	/**
 	 * The start, in storage format.
@@ -178,22 +199,30 @@ final readonly class Range {
 	 * end set to 23:59:59 — silently drops anything in the final second
 	 * of the period, and does so only on the busiest reports.
 	 *
-	 * The column is validated rather than escaped, because it is
-	 * interpolated into SQL.
+	 * The column and the prefix are validated rather than escaped,
+	 * because both are interpolated into SQL.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $column Column holding a UTC timestamp.
 	 * @param string $prefix Placeholder prefix, so several ranges can
 	 *                       appear in one statement without colliding.
+	 *                       Letters, digits and underscores.
 	 *
 	 * @return array{0: string, 1: array<string, string>} SQL and bindings.
 	 *
-	 * @throws \InvalidArgumentException On an unsafe column name.
+	 * @throws \InvalidArgumentException On an unsafe column name or prefix.
 	 */
 	public function where( string $column, string $prefix = '' ): array {
-		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_.]*$/', $column ) ) {
+		// \z rather than $, which also matches before a trailing newline.
+		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_.]*\z/', $column ) ) {
 			throw new \InvalidArgumentException( 'Unsafe column name: ' . $column );
+		}
+
+		// The prefix becomes part of a placeholder name in the SQL text,
+		// so it is held to the same standard as the column.
+		if ( 1 !== preg_match( '/^[A-Za-z0-9_]*\z/', $prefix ) ) {
+			throw new \InvalidArgumentException( 'Unsafe placeholder prefix: ' . $prefix );
 		}
 
 		$from = $prefix . 'from';
@@ -221,7 +250,7 @@ final readonly class Range {
 	 *
 	 * @return array{0: string, 1: array<string, int>} SQL and bindings.
 	 *
-	 * @throws \InvalidArgumentException On an unsafe column name.
+	 * @throws \InvalidArgumentException On an unsafe column name or prefix.
 	 */
 	public function where_epoch( string $column, string $prefix = '' ): array {
 		[ $sql ] = $this->where( $column, $prefix );
@@ -244,8 +273,10 @@ final readonly class Range {
 	 * @param string   $table    Table name.
 	 * @param string   $column   Timestamp column to group and filter on.
 	 * @param Interval $interval Bucket size.
-	 * @param string[] $selects  Extra aggregate expressions, e.g.
+	 * @param list<string> $selects Extra aggregate expressions, e.g.
 	 *                           `array( 'SUM(total) AS revenue' )`.
+	 *                           Raw SQL, interpolated as given: never
+	 *                           build one from request input.
 	 * @param string   $driver   `sqlite` or `mysql`.
 	 * @param bool     $epoch    Whether the column holds Unix seconds.
 	 *
@@ -261,7 +292,7 @@ final readonly class Range {
 		string $driver = 'sqlite',
 		bool $epoch = false
 	): array {
-		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*$/', $table ) ) {
+		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*\z/', $table ) ) {
 			throw new \InvalidArgumentException( 'Unsafe table name: ' . $table );
 		}
 
@@ -286,7 +317,8 @@ final readonly class Range {
 	 *
 	 * @param Interval $interval Bucket size.
 	 *
-	 * @return Range[] Consecutive, non-overlapping sub-ranges.
+	 * @return list<Range> Consecutive, non-overlapping sub-ranges, at
+	 *                     most 20,000 of them.
 	 */
 	public function buckets( Interval $interval ): array {
 		$buckets = array();
@@ -319,7 +351,7 @@ final readonly class Range {
 	 * @param Interval             $interval Bucket size.
 	 * @param mixed                $empty    Value for a missing bucket.
 	 *
-	 * @return array<int, array{key: string, label: string, start: string, value: mixed}>
+	 * @return list<array{key: string, label: string, start: string, value: mixed}>
 	 */
 	public function fill( array $rows, Interval $interval, mixed $empty = 0 ): array {
 		$filled = array();

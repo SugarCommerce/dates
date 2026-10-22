@@ -29,20 +29,35 @@ namespace SugarCommerce\Dates;
  */
 enum Preset: string {
 
+	/** Midnight today to midnight tonight. */
 	case Today            = 'today';
+	/** The whole of yesterday. */
 	case Yesterday        = 'yesterday';
+	/** The seven complete days before today. */
 	case Last7Days        = 'last_7';
+	/** The thirty complete days before today. */
 	case Last30Days       = 'last_30';
+	/** The last thirty days, today included. */
 	case Last30DaysToDate = 'last_30_to_date';
+	/** The ninety complete days before today. */
 	case Last90Days       = 'last_90';
+	/** This ISO week, Monday to Sunday. */
 	case ThisWeek         = 'this_week';
+	/** The previous ISO week. */
 	case LastWeek         = 'last_week';
+	/** This calendar month. */
 	case ThisMonth        = 'this_month';
+	/** The previous calendar month. */
 	case LastMonth        = 'last_month';
+	/** This calendar quarter. */
 	case ThisQuarter      = 'this_quarter';
+	/** The previous calendar quarter. */
 	case LastQuarter      = 'last_quarter';
+	/** This calendar year. */
 	case ThisYear         = 'this_year';
+	/** The previous calendar year. */
 	case LastYear         = 'last_year';
+	/** From 1 January 2000 to the end of today. */
 	case AllTime          = 'all_time';
 
 	/**
@@ -180,6 +195,13 @@ enum Preset: string {
 
 		if ( null === $start || null === $end ) {
 			return self::Last30Days->range( $clock );
+		}
+
+		// Both dates come from the request. Reversed, they made a range
+		// whose end preceded its start: no buckets, and a previous()
+		// period that ran forwards.
+		if ( $end < $start ) {
+			[ $start, $end ] = array( $end, $start );
 		}
 
 		// A person picking "1 May to 31 May" means the whole of the 31st.

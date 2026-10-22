@@ -66,8 +66,16 @@ final readonly class Relative {
 			return '';
 		}
 
-		$now   = ( $clock ?? new Clock() )->now();
-		$delta = $now - $unix;
+		$now = ( $clock ?? new Clock() )->now();
+
+		// A stored value at DateTime's extremes ('@-9223372036854775807')
+		// makes the subtraction overflow into a float, which phrase()'s
+		// int parameter then refuses with a TypeError. Saturate instead.
+		$delta = match ( true ) {
+			$unix < 0 && $now > PHP_INT_MAX + $unix => PHP_INT_MAX,
+			$unix > 0 && $now < PHP_INT_MIN + $unix => -PHP_INT_MAX,
+			default                                 => $now - $unix,
+		};
 
 		// Past the cutoff a date reads better than a large unit count.
 		if ( $cutoff > 0 && abs( $delta ) > $cutoff ) {

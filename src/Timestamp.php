@@ -50,6 +50,14 @@ final readonly class Timestamp {
 	 * or its configuration changes. UTC is assumed explicitly unless the
 	 * string says otherwise.
 	 *
+	 * MySQL's zero date, in any of its spellings, means "no date" and is
+	 * null — PHP reads `0000-00-00` as 30 November in year -1, which made
+	 * a "never expires" column read as long expired.
+	 *
+	 * Lenient by design: anything `DateTimeImmutable` accepts is read,
+	 * relative phrases such as `tomorrow` included. For a date typed by a
+	 * person, use the strict {@see self::from_date()}.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $value Stored value.
@@ -59,7 +67,7 @@ final readonly class Timestamp {
 	public static function parse( string $value ): ?\DateTimeImmutable {
 		$value = trim( $value );
 
-		if ( '' === $value || '0000-00-00 00:00:00' === $value ) {
+		if ( '' === $value || str_starts_with( $value, '0000-00-00' ) ) {
 			return null;
 		}
 
