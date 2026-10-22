@@ -159,6 +159,7 @@ use SugarCommerce\Dates\Timestamp;
 Timestamp::parse( $value );      // ?DateTimeImmutable — null, not an exception
 Timestamp::to_unix( $value );    // ?int
 Timestamp::now();                // '2026-08-01 13:00:00'
+Timestamp::at( time() + 3600 );  // a Unix time in the same format (UTC unless a timezone is given)
 Timestamp::iso( $value );        // '2026-08-01T13:00:00+00:00'
 Timestamp::format( $value, 'j M Y', 'Europe/Dublin' );
 Timestamp::is_past( $value );
@@ -202,7 +203,7 @@ composer install
 composer test
 ```
 
-114 tests, run entirely against a frozen clock — including the leap year, the DST boundaries, and the month-end arithmetic that breaks naive `-1 month` maths; typed dates that do not exist, the end of 23- and 25-hour days, localised dates in four languages, relative parts agreeing with the English phrase across ±15 months, and an epoch series run against a real SQLite table and filled.
+130 tests, run entirely against a frozen clock — including the leap year, the DST boundaries, and the month-end arithmetic that breaks naive `-1 month` maths; typed dates that do not exist, the end of 23- and 25-hour days, localised dates in four languages, relative parts agreeing with the English phrase across ±15 months, and an epoch series run against a real SQLite table and filled.
 
 ## License
 

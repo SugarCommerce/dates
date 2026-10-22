@@ -740,4 +740,22 @@ final class DatesTest extends TestCase {
 		$this->assertSame( Preset::Last30DaysToDate->range( $this->clock() )->to_array(), $range->to_array() );
 		$this->assertSame( 1, Range::last_days( 0, $this->clock() )->days() );
 	}
+
+	/* ─── Timestamp::at (1.3.0) ─────────────────────────────────────── */
+
+	public function test_at_formats_a_unix_time_in_utc_by_default(): void {
+		$this->assertSame( '2026-08-01 13:00:00', Timestamp::at( 1_785_589_200 ) );
+		$this->assertSame( gmdate( 'j M Y H:i \U\T\C', 1_785_589_200 ), Timestamp::at( 1_785_589_200, 'j M Y H:i \U\T\C' ) );
+		$this->assertSame( '1970-01-01 00:00:00', Timestamp::at( 0 ) );
+		$this->assertSame( '1969-12-31', Timestamp::at( -1, Timestamp::DATE ) );
+	}
+
+	public function test_at_shows_a_timezone_and_survives_an_unknown_one(): void {
+		$this->assertSame( '2026-08-01 14:00 IST', Timestamp::at( 1_785_589_200, 'Y-m-d H:i T', 'Europe/Dublin' ) );
+		$this->assertSame( '2026-08-01 13:00:00', Timestamp::at( 1_785_589_200, Timestamp::SQL, 'Mars/Olympus' ) );
+	}
+
+	public function test_at_round_trips_with_to_unix(): void {
+		$this->assertSame( 1_785_589_200, Timestamp::to_unix( Timestamp::at( 1_785_589_200 ) ) );
+	}
 }

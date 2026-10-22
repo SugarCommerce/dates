@@ -134,6 +134,35 @@ final readonly class Timestamp {
 	}
 
 	/**
+	 * Format a Unix time, in UTC unless told otherwise.
+	 *
+	 * For a value that is already a number — an expiry computed as
+	 * `time() + $ttl`, a token's `exp` — where format() would need it as a
+	 * string first. `gmdate()` does the same for UTC; this keeps the one
+	 * storage format constant and takes a timezone for display.
+	 *
+	 *   Timestamp::at( time() + 3600 );                          // '2026-08-01 14:00:00'
+	 *   Timestamp::at( $expires, 'j M Y H:i T', 'Europe/Dublin' );
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $unix     Seconds since the epoch.
+	 * @param string $format   PHP date format.
+	 * @param string $timezone Target timezone; an unknown one falls back to UTC.
+	 *
+	 * @return string
+	 */
+	public static function at( int $unix, string $format = self::SQL, string $timezone = 'UTC' ): string {
+		$date = ( new \DateTimeImmutable( '@' . $unix ) );
+
+		try {
+			return $date->setTimezone( new \DateTimeZone( $timezone ) )->format( $format );
+		} catch ( \Exception ) {
+			return $date->format( $format );
+		}
+	}
+
+	/**
 	 * Convert to ISO 8601, for an API response.
 	 *
 	 * @since 1.0.0
