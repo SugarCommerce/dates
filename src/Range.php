@@ -1,0 +1,437 @@
+<?php
+/**
+ * A period between two moments.
+ *
+ * @package   SugarCommerce\Dates
+ * @copyright Copyright (c) 2026, ArrayPress Limited
+ * @license   GPL-2.0-or-later
+ * @since     1.0.0
+ */
+
+declare( strict_types=1 );
+
+namespace SugarCommerce\Dates;
+
+/**
+ * Class Range
+ *
+ * The from/to pair every report and dashboard filter needs.
+ *
+ * **The end is exclusive.** A range of 1 May to 31 May written with an
+ * inclusive end has to be queried as `< '2026-06-01'` or as
+ * `<= '2026-05-31 23:59:59'`, and the second silently drops anything in
+ * the final second of the month. Exclusive ends compose correctly, tile
+ * without gaps or overlaps, and make `>= from AND < to` always right.
+ *
+ * @since 1.0.0
+ */
+final readonly class Range {
+
+	/**
+	 * The longest window last_days() builds, in days: a little over
+	 * 2,700 years, far beyond any real report and far inside what
+	 * DateTime holds.
+	 *
+	 * @since 1.0.0
+	 */
+	public const MAX_DAYS = 1000000;
+
+	/**
+	 * @since 1.0.0
+	 *
+	 * @param \DateTimeImmutable $from Inclusive start.
+	 * @param \DateTimeImmutable $to   Exclusive end.
+	 */
+	public function __construct(
+		public \DateTimeImmutable $from,
+		public \DateTimeImmutable $to,
+	) {}
+
+	/**
+	 * Build from two stored timestamps.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $from Inclusive start.
+	 * @param string $to   Exclusive end.
+	 *
+	 * @return self
+	 *
+	 * @throws \InvalidArgumentException When either value is unparseable.
+	 */
+	public static function between( string $from, string $to ): self {
+		$start = Timestamp::parse( $from );
+		$end   = Timestamp::parse( $to );
+
+		if ( null === $start || null === $end ) {
+			throw new \InvalidArgumentException( 'Both ends of a range must be parseable timestamps.' );
+		}
+
+		return $start <= $end ? new self( $start, $end ) : new self( $end, $start );
+	}
+
+	/**
+	 * The last few whole days, today included.
+	 *
+	 * The window behind a "last 30 days" chart: from midnight at the start
+	 * of the first day to midnight at the end of today, so the first bar is
+	 * a whole day and not whatever was left of it at this hour, and today's
+	 * bar is today. Preset::Last30DaysToDate for any length.
+	 *
+	 * The midnights are UTC's unless a zone is given, and then they are that
+	 * zone's -- the range itself is still two moments, printed in UTC.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int                $days  How many days, from one to MAX_DAYS.
+	 *                                  Out of range is clamped, since the
+	 *                                  count often arrives as `?days=`.
+	 * @param Clock|null         $clock Source of now.
+	 * @param \DateTimeZone|null $zone  Whose days are meant. UTC when null.
+	 *
+	 * @return self
+	 */
+	public static function last_days( int $days, ?Clock $clock = null, ?\DateTimeZone $zone = null ): self {
+		$utc      = new \DateTimeZone( 'UTC' );
+		$tomorrow = ( $clock ?? new Clock() )->local( $zone ?? $utc )->setTime( 0, 0 )->modify( '+1 day' );
+
+		// Unclamped, a huge count overflows inside modify() and wraps to a
+		// start date millions of years in the future.
+		$days = max( 1, min( self::MAX_DAYS, $days ) );
+
+		return new self( $tomorrow->modify( '-' . $days . ' days' )->setTimezone( $utc ), $tomorrow->setTimezone( $utc ) );
+	}
+
+	/**
+	 * The start, in storage format.
+	 *
+	 * Always UTC, whatever zone the moment was built in: a range made from
+	 * a shop's local midnight is still stored and queried as the UTC
+	 * instant that midnight was.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function start(): string {
+		return $this->from->setTimezone( new \DateTimeZone( 'UTC' ) )->format( Timestamp::SQL );
+	}
+
+	/**
+	 * The end, in storage format. Always UTC, as start() is.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function end(): string {
+		return $this->to->setTimezone( new \DateTimeZone( 'UTC' ) )->format( Timestamp::SQL );
+	}
+
+	/**
+	 * Length in seconds.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	public function seconds(): int {
+		return $this->to->getTimestamp() - $this->from->getTimestamp();
+	}
+
+	/**
+	 * Length in whole days.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	public function days(): int {
+		return (int) floor( $this->seconds() / 86400 );
+	}
+
+	/**
+	 * Whether a moment falls inside the range.
+	 *
+	 * Inclusive of the start, exclusive of the end.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $value Stored timestamp.
+	 *
+	 * @return bool
+	 */
+	public function contains( string $value ): bool {
+		$unix = Timestamp::to_unix( $value );
+
+		if ( null === $unix ) {
+			return false;
+		}
+
+		return $unix >= $this->from->getTimestamp() && $unix < $this->to->getTimestamp();
+	}
+
+	/**
+	 * The equivalent range immediately before this one.
+	 *
+	 * For period-on-period comparison. Same length, ending where this one
+	 * begins, so the two tile exactly — comparing a 30-day window against
+	 * "last month" is the usual way a dashboard reports a change that did
+	 * not happen.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return self
+	 */
+	public function previous(): self {
+		$length = $this->seconds();
+
+		return new self(
+			$this->from->modify( '-' . $length . ' seconds' ),
+			$this->from
+		);
+	}
+
+	/* ─── Querying ──────────────────────────────────────────────────── */
+
+	/**
+	 * A `WHERE` fragment and its bindings for this range.
+	 *
+	 * Written as `>= from AND < to`, which is correct because the end is
+	 * exclusive. The common alternative — `BETWEEN from AND to` with the
+	 * end set to 23:59:59 — silently drops anything in the final second
+	 * of the period, and does so only on the busiest reports.
+	 *
+	 * The column is validated rather than escaped, because it is
+	 * interpolated into SQL.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $column Column holding a UTC timestamp.
+	 * @param string $prefix Placeholder prefix, so several ranges can
+	 *                       appear in one statement without colliding.
+	 *
+	 * @return array{0: string, 1: array<string, string>} SQL and bindings.
+	 *
+	 * @throws \InvalidArgumentException On an unsafe column name.
+	 */
+	public function where( string $column, string $prefix = '' ): array {
+		// \z and not $: a dollar also matches before a trailing newline,
+		// and "created_at\n" is not a column.
+		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_.]*\z/', $column ) ) {
+			throw new \InvalidArgumentException( 'Unsafe column name: ' . $column );
+		}
+
+		// The prefix becomes part of a placeholder's name, so it is held to
+		// the same letters a name may have.
+		if ( 1 !== preg_match( '/^[A-Za-z0-9_]*\z/', $prefix ) ) {
+			throw new \InvalidArgumentException( 'Unsafe placeholder prefix: ' . $prefix );
+		}
+
+		$from = $prefix . 'from';
+		$to   = $prefix . 'to';
+
+		return array(
+			$column . ' >= :' . $from . ' AND ' . $column . ' < :' . $to,
+			array(
+				$from => $this->start(),
+				$to => $this->end(),
+			),
+		);
+	}
+
+	/**
+	 * A `WHERE` fragment for a column of Unix seconds.
+	 *
+	 * The same exclusive-end comparison as where(), bound as integers.
+	 * Comparing an integer column with the formatted strings where() binds
+	 * is not an error in SQLite -- it is a type-ordering rule under which
+	 * every integer sorts before every string, so the query silently
+	 * matches everything or nothing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $column Column holding Unix seconds.
+	 * @param string $prefix Placeholder prefix.
+	 *
+	 * @return array{0: string, 1: array<string, int>} SQL and bindings.
+	 *
+	 * @throws \InvalidArgumentException On an unsafe column name or prefix.
+	 */
+	public function where_epoch( string $column, string $prefix = '' ): array {
+		[ $sql ] = $this->where( $column, $prefix );
+
+		return array(
+			$sql,
+			array(
+				$prefix . 'from' => $this->from->getTimestamp(),
+				$prefix . 'to'   => $this->to->getTimestamp(),
+			),
+		);
+	}
+
+	/**
+	 * The same condition for WordPress: `%s` placeholders, for `$wpdb->prepare()`.
+	 *
+	 * where() names its placeholders (`:from`), which is PDO's way and
+	 * something `$wpdb->prepare()` cannot read. This is the one to use
+	 * there: the two values come back in the order the statement mentions
+	 * them, start then end.
+	 *
+	 *   [ $where, $dates ] = $range->where_prepared( 'o.date_created' );
+	 *   $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} o WHERE {$where}", $dates ) );
+	 *
+	 * The column is validated and not escaped, because it is interpolated
+	 * into SQL -- a name, with a table alias in front if it has one, and
+	 * nothing else. An expression is refused: write the condition by hand
+	 * around start() and end() for one of those.
+	 *
+	 * @since 1.0.0
+	 *
+	 * A column of Unix seconds takes `$epoch`, and is compared with `%d`
+	 * and the two moments as integers, for the reason where_epoch() gives.
+	 *
+	 * @param string $column Column holding a UTC timestamp.
+	 * @param bool   $epoch  Whether the column holds Unix seconds.
+	 *
+	 * @return array{0: string, 1: array{0: string|int, 1: string|int}} SQL
+	 *         and the two values to prepare it with.
+	 *
+	 * @throws \InvalidArgumentException On an unsafe column name.
+	 */
+	public function where_prepared( string $column, bool $epoch = false ): array {
+		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_.]*\z/', $column ) ) {
+			throw new \InvalidArgumentException( 'Unsafe column name: ' . $column );
+		}
+
+		if ( $epoch ) {
+			return array(
+				$column . ' >= %d AND ' . $column . ' < %d',
+				array( $this->from->getTimestamp(), $this->to->getTimestamp() ),
+			);
+		}
+
+		return array(
+			$column . ' >= %s AND ' . $column . ' < %s',
+			array( $this->start(), $this->end() ),
+		);
+	}
+
+	/**
+	 * A complete `SELECT` for a grouped time series.
+	 *
+	 * Returns the statement and its bindings for "count and sum, bucketed
+	 * by day" and similar — the query behind every dashboard chart.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string   $table    Table name.
+	 * @param string   $column   Timestamp column to group and filter on.
+	 * @param Interval $interval Bucket size.
+	 * @param string[] $selects  Extra aggregate expressions, e.g.
+	 *                           `array( 'SUM(total) AS revenue' )`. Raw
+	 *                           SQL, interpolated as given: never build
+	 *                           one from request input.
+	 * @param string   $driver   `sqlite` or `mysql`.
+	 * @param bool     $epoch    Whether the column holds Unix seconds.
+	 *
+	 * @return array{0: string, 1: array<string, string|int>}
+	 *
+	 * @throws \InvalidArgumentException On an unsafe identifier.
+	 */
+	public function series_query(
+		string $table,
+		string $column,
+		Interval $interval,
+		array $selects = array(),
+		string $driver = 'sqlite',
+		bool $epoch = false
+	): array {
+		if ( 1 !== preg_match( '/^[A-Za-z_][A-Za-z0-9_]*\z/', $table ) ) {
+			throw new \InvalidArgumentException( 'Unsafe table name: ' . $table );
+		}
+
+		[ $where, $bindings ] = $epoch ? $this->where_epoch( $column ) : $this->where( $column );
+
+		$bucket  = $interval->group_expression( $column, $driver, $epoch );
+		$columns = array_merge( array( $bucket . ' AS bucket', 'COUNT(*) AS count' ), $selects );
+
+		$sql = 'SELECT ' . implode( ', ', $columns )
+			. ' FROM ' . $table
+			. ' WHERE ' . $where
+			. ' GROUP BY bucket'
+			. ' ORDER BY bucket';
+
+		return array( $sql, $bindings );
+	}
+
+	/**
+	 * Every bucket in the range, in order.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param Interval $interval Bucket size.
+	 *
+	 * @return Range[] Consecutive, non-overlapping sub-ranges.
+	 */
+	public function buckets( Interval $interval ): array {
+		$buckets = array();
+		$cursor  = $interval->floor( $this->from );
+
+		// A guard against a pathological range and an hour-grain request.
+		$limit = 20000;
+
+		while ( $cursor < $this->to && count( $buckets ) < $limit ) {
+			$next      = $cursor->modify( $interval->step() );
+			$buckets[] = new self( $cursor, $next );
+			$cursor    = $next;
+		}
+
+		return $buckets;
+	}
+
+	/**
+	 * Fill gaps in a grouped result set with zeroes.
+	 *
+	 * `GROUP BY` returns only the buckets that had rows, so a chart drawn
+	 * straight from a query has holes where nothing happened — and a line
+	 * chart joins across them, which reads as a gradual decline rather
+	 * than two days of no sales. This produces one entry per bucket,
+	 * present or not.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<string, mixed> $rows     Query results keyed by bucket.
+	 * @param Interval             $interval Bucket size.
+	 * @param mixed                $empty    Value for a missing bucket.
+	 *
+	 * @return array<int, array{key: string, label: string, start: string, value: mixed}>
+	 */
+	public function fill( array $rows, Interval $interval, mixed $empty = 0 ): array {
+		$filled = array();
+
+		foreach ( $this->buckets( $interval ) as $bucket ) {
+			$key = $interval->key( $bucket->from );
+
+			$filled[] = array(
+				'key'   => $key,
+				'label' => $interval->label( $bucket->from ),
+				'start' => $bucket->start(),
+				'value' => $rows[ $key ] ?? $empty,
+			);
+		}
+
+		return $filled;
+	}
+
+	/**
+	 * The range as a `[ from, to ]` pair of stored strings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array{0: string, 1: string}
+	 */
+	public function to_array(): array {
+		return array( $this->start(), $this->end() );
+	}
+}
