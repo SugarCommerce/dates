@@ -130,7 +130,11 @@ each unit and count, because "3 weeks ago" cannot be translated as "%s ago".
 By default they count whole units, say "just now" under a minute, and give a
 date past thirty days. A screen that has always used `human_time_diff()` can
 keep its wording with `Site::relative( $value, null, Site::LIKE_WORDPRESS )`.
-`Relative::format()` says the same in plain English for a log or an API.
+
+`Site::relative()` is the one relative-time renderer of the SugarCommerce
+packages: tables' list dates and flyouts' activity feed call it rather than
+keeping their own. `Relative::delta()` and `Relative::parts()` are its
+arithmetic, for an application that words the phrase itself.
 
 ## A period asked for by API
 
@@ -197,6 +201,9 @@ listed keeps its name under `SugarCommerce\Dates`.
 |---|---|
 | `ArrayPress\Dates\*` | `SugarCommerce\Dates\*` |
 | `Site::relative_with_exact( $v, $clock, $args )` | `Site::relative_with_title( $v, $clock, $args )` |
+| `Relative::format( $v, $clock, $cutoff, $fallback )` | `Site::relative( $v, $clock, [ 'cutoff' => $cutoff, 'fallback' => $fallback ] )` -- the same words in English, translated elsewhere |
+| `Relative::phrase( $seconds )` | `Site::relative()` of a stored time, or `Relative::parts( $seconds )` for the unit and count |
+| `Relative::with_title( $v, $clock )` | `Site::relative_with_title( $v, $clock )` -- the title is in the site's format and zone |
 | `Buckets::span( $from, $to, $with_year )` | `Site::span( $from, $to, $with_year, [ 'timezone' => $from->getTimezone(), 'repeat_year' => true ] )` |
 | `Buckets::local( $utc, $zone )` | `Site::local( $utc, $zone )` — null for something that is not a date, where it was now |
 | `(int) get_option( 'start_of_week', 1 )` | `Site::week_starts()` |

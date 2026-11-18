@@ -204,8 +204,8 @@ final class Site {
 	 * A whole phrase is chosen for each unit and each direction, with
 	 * _n(), because "{count} {unit} ago" cannot be translated in pieces:
 	 * the unit inflects with the count and the word order is not English's.
-	 * In English, and with no `$args`, it says exactly what
-	 * {@see Relative::format()} says.
+	 * The one relative-time renderer of the SugarCommerce packages: tables'
+	 * list dates and flyouts' activity feed call it too.
 	 *
 	 * The defaults are this library's taste: whole units ("1 week" until a
 	 * second one has passed), "just now" under a minute, and a date in

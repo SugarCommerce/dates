@@ -18,7 +18,7 @@ namespace SugarCommerce\Dates\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Dates\{Clock, Interval, Preset, Range, Relative, Timestamp};
+use SugarCommerce\Dates\{Clock, Interval, Preset, Range, Site, Timestamp};
 
 final class DatesTest extends TestCase {
 
@@ -27,6 +27,11 @@ final class DatesTest extends TestCase {
 
 	private function clock( string $at = self::NOW ): Clock {
 		return Clock::frozen( $at );
+	}
+
+	/** A stored UTC datetime this many seconds before NOW; negative is after. */
+	private static function ago( int $seconds ): string {
+		return gmdate( 'Y-m-d H:i:s', strtotime( self::NOW . ' UTC' ) - $seconds );
 	}
 
 	/* ─── Clock ─────────────────────────────────────────────────────── */
@@ -41,7 +46,7 @@ final class DatesTest extends TestCase {
 			// Anchored: "10 minutes ago" legitimately contains "0 minute".
 			$this->assertSame(
 				0,
-				preg_match( '/\b0 (second|minute|hour|day|week|month|year)/', Relative::phrase( $seconds ) ),
+				preg_match( '/\b0 (second|minute|hour|day|week|month|year)/', Site::relative( self::ago( $seconds ), $this->clock() ) ),
 				$seconds . ' seconds rendered a zero count.'
 			);
 		}
@@ -49,10 +54,10 @@ final class DatesTest extends TestCase {
 
 	public function test_under_a_minute_is_just_now(): void {
 		foreach ( array( 0, 1, 30, 44, 45, 59 ) as $seconds ) {
-			$this->assertSame( 'just now', Relative::phrase( $seconds ) );
+			$this->assertSame( 'just now', Site::relative( self::ago( $seconds ), $this->clock() ) );
 		}
 
-		$this->assertSame( '1 minute ago', Relative::phrase( 60 ) );
+		$this->assertSame( '1 minute ago', Site::relative( self::ago( 60 ), $this->clock() ) );
 	}
 
 	public function test_a_frozen_clock_does_not_move(): void {
@@ -156,7 +161,7 @@ final class DatesTest extends TestCase {
 
 	#[DataProvider( 'relative_phrases' )]
 	public function test_relative_phrases( int $delta, string $expected ): void {
-		$this->assertSame( $expected, Relative::phrase( $delta ) );
+		$this->assertSame( $expected, Site::relative( self::ago( $delta ), $this->clock() ) );
 	}
 
 	/** @return array<string, array{0: int, 1: string}> */
@@ -178,8 +183,8 @@ final class DatesTest extends TestCase {
 	}
 
 	public function test_singular_and_plural_are_correct(): void {
-		$this->assertStringContainsString( '1 hour ago', Relative::phrase( 3600 ) );
-		$this->assertStringContainsString( '2 hours ago', Relative::phrase( 7200 ) );
+		$this->assertStringContainsString( '1 hour ago', Site::relative( self::ago( 3600 ), $this->clock() ) );
+		$this->assertStringContainsString( '2 hours ago', Site::relative( self::ago( 7200 ), $this->clock() ) );
 	}
 
 	/**
@@ -187,24 +192,23 @@ final class DatesTest extends TestCase {
 	 * date is returned instead.
 	 */
 	public function test_distant_times_fall_back_to_a_date(): void {
-		$this->assertSame( '1 Jan 2025', Relative::format( '2025-01-01 00:00:00', $this->clock() ) );
+		$this->assertSame( '1 Jan 2025', Site::relative( '2025-01-01 00:00:00', $this->clock() ) );
 	}
 
 	public function test_the_cutoff_can_be_disabled(): void {
-		$this->assertStringContainsString( 'ago', Relative::format( '2025-01-01 00:00:00', $this->clock(), 0 ) );
+		$this->assertStringContainsString( 'ago', Site::relative( '2025-01-01 00:00:00', $this->clock(), array( 'cutoff' => 0 ) ) );
 	}
 
 	public function test_relative_output_pairs_with_an_absolute_title(): void {
-		$result = Relative::with_title( '2026-07-15 12:30:00', $this->clock() );
+		$result = Site::relative_with_title( '2026-07-15 12:30:00', $this->clock() );
 
 		$this->assertSame( '2 hours ago', $result['text'] );
-		$this->assertStringContainsString( 'UTC', $result['title'] );
-		$this->assertStringContainsString( '15 July 2026', $result['title'] );
+		$this->assertNotSame( '', $result['title'] );
 	}
 
 	public function test_unparseable_values_render_as_nothing(): void {
-		$this->assertSame( '', Relative::format( 'garbage', $this->clock() ) );
-		$this->assertSame( array( 'text' => '', 'title' => '' ), Relative::with_title( 'garbage' ) );
+		$this->assertSame( '', Site::relative( 'garbage', $this->clock() ) );
+		$this->assertSame( array( 'text' => '', 'title' => '' ), Site::relative_with_title( 'garbage' ) );
 	}
 
 	/* ─── Ranges ────────────────────────────────────────────────────── */

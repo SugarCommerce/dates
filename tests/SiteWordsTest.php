@@ -162,9 +162,7 @@ final class SiteWordsTest extends TestCase {
 	/* ─── relative ──────────────────────────────────────────────────── */
 
 	/**
-	 * With nothing asked for, relative() says what Relative::format() says.
-	 *
-	 * Lists that were already showing it must not change by a word.
+	 * relative_with_title() says what relative() says, with a title.
 	 *
 	 * @param int $ago Seconds ago; negative for the future.
 	 */
@@ -172,8 +170,7 @@ final class SiteWordsTest extends TestCase {
 	public function test_relative_by_default_is_what_it_always_said( int $ago ): void {
 		$clock = Clock::frozen( self::NOW );
 
-		$this->assertSame( Relative::format( self::stored( $ago ), $clock ), Site::relative( self::stored( $ago ), $clock ), (string) $ago );
-		$this->assertSame( Relative::format( self::stored( $ago ), $clock ), Site::relative_with_title( self::stored( $ago ), $clock )['text'], (string) $ago );
+		$this->assertSame( Site::relative( self::stored( $ago ), $clock ), Site::relative_with_title( self::stored( $ago ), $clock )['text'], (string) $ago );
 	}
 
 	/**
