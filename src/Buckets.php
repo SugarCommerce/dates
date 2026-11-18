@@ -415,7 +415,7 @@ final class Buckets {
 
 				if ( $number > 0 ) {
 					/* translators: %d: which week of the period, counting from one */
-					return array( array( sprintf( __( 'Week %d', 'arraypress' ), $number ), $span ), $span );
+					return array( array( sprintf( __( 'Week %d', 'sugarcommerce' ), $number ), $span ), $span );
 				}
 
 				return array( self::date( $first, $crosses ? 'j M Y' : 'j M' ), $span );
@@ -425,7 +425,7 @@ final class Buckets {
 
 			case Interval::Quarter:
 				/* translators: 1: the quarter, one to four, 2: the year */
-				$quarter = sprintf( __( 'Q%1$d %2$s', 'arraypress' ), (int) ceil( (int) $at->format( 'n' ) / 3 ), $at->format( 'Y' ) );
+				$quarter = sprintf( __( 'Q%1$d %2$s', 'sugarcommerce' ), (int) ceil( (int) $at->format( 'n' ) / 3 ), $at->format( 'Y' ) );
 
 				return array( $quarter, $quarter );
 

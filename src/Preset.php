@@ -178,21 +178,21 @@ enum Preset: string {
 	 */
 	public function label(): string {
 		return match ( $this ) {
-			self::Today            => __( 'Today', 'arraypress' ),
-			self::Yesterday        => __( 'Yesterday', 'arraypress' ),
-			self::Last7Days        => __( 'Last 7 days', 'arraypress' ),
-			self::Last30Days       => __( 'Last 30 days', 'arraypress' ),
-			self::Last30DaysToDate => __( 'Last 30 days (to date)', 'arraypress' ),
-			self::Last90Days       => __( 'Last 90 days', 'arraypress' ),
-			self::ThisWeek         => __( 'This week', 'arraypress' ),
-			self::LastWeek         => __( 'Last week', 'arraypress' ),
-			self::ThisMonth        => __( 'This month', 'arraypress' ),
-			self::LastMonth        => __( 'Last month', 'arraypress' ),
-			self::ThisQuarter      => __( 'This quarter', 'arraypress' ),
-			self::LastQuarter      => __( 'Last quarter', 'arraypress' ),
-			self::ThisYear         => __( 'This year', 'arraypress' ),
-			self::LastYear         => __( 'Last year', 'arraypress' ),
-			self::AllTime          => __( 'All time', 'arraypress' ),
+			self::Today            => __( 'Today', 'sugarcommerce' ),
+			self::Yesterday        => __( 'Yesterday', 'sugarcommerce' ),
+			self::Last7Days        => __( 'Last 7 days', 'sugarcommerce' ),
+			self::Last30Days       => __( 'Last 30 days', 'sugarcommerce' ),
+			self::Last30DaysToDate => __( 'Last 30 days (to date)', 'sugarcommerce' ),
+			self::Last90Days       => __( 'Last 90 days', 'sugarcommerce' ),
+			self::ThisWeek         => __( 'This week', 'sugarcommerce' ),
+			self::LastWeek         => __( 'Last week', 'sugarcommerce' ),
+			self::ThisMonth        => __( 'This month', 'sugarcommerce' ),
+			self::LastMonth        => __( 'Last month', 'sugarcommerce' ),
+			self::ThisQuarter      => __( 'This quarter', 'sugarcommerce' ),
+			self::LastQuarter      => __( 'Last quarter', 'sugarcommerce' ),
+			self::ThisYear         => __( 'This year', 'sugarcommerce' ),
+			self::LastYear         => __( 'Last year', 'sugarcommerce' ),
+			self::AllTime          => __( 'All time', 'sugarcommerce' ),
 		};
 	}
 
@@ -240,19 +240,19 @@ enum Preset: string {
 				'enum'        => array_keys( self::options() ),
 				'description' => $descriptions['period'] ?? sprintf(
 					/* translators: %s: a period's name, such as "Last 30 days". */
-					__( 'A named period. Left out with no start and end, it is "%s".', 'arraypress' ),
+					__( 'A named period. Left out with no start and end, it is "%s".', 'sugarcommerce' ),
 					$fallback->label()
 				),
 			),
 			'start'  => array(
 				'type'        => 'string',
 				'pattern'     => self::DATE_PATTERN,
-				'description' => $descriptions['start'] ?? __( 'The first day of a period of your own, as YYYY-MM-DD. Give it with end, in place of period.', 'arraypress' ),
+				'description' => $descriptions['start'] ?? __( 'The first day of a period of your own, as YYYY-MM-DD. Give it with end, in place of period.', 'sugarcommerce' ),
 			),
 			'end'    => array(
 				'type'        => 'string',
 				'pattern'     => self::DATE_PATTERN,
-				'description' => $descriptions['end'] ?? __( 'The last day of a period of your own, as YYYY-MM-DD. The whole of that day is counted.', 'arraypress' ),
+				'description' => $descriptions['end'] ?? __( 'The last day of a period of your own, as YYYY-MM-DD. The whole of that day is counted.', 'sugarcommerce' ),
 			),
 		);
 	}
@@ -296,18 +296,18 @@ enum Preset: string {
 
 		if ( '' !== $start || '' !== $end ) {
 			if ( '' !== $period ) {
-				return new \WP_Error( $prefix . '_bad_period', __( 'Give a period, or a start and an end, not both.', 'arraypress' ), array( 'status' => 400 ) );
+				return new \WP_Error( $prefix . '_bad_period', __( 'Give a period, or a start and an end, not both.', 'sugarcommerce' ), array( 'status' => 400 ) );
 			}
 
 			foreach ( array( $start, $end ) as $date ) {
 				if ( null === Timestamp::from_date( $date ) ) {
-					return new \WP_Error( $prefix . '_bad_date', __( 'A period of your own needs a start and an end, each a real date written YYYY-MM-DD.', 'arraypress' ), array( 'status' => 400 ) );
+					return new \WP_Error( $prefix . '_bad_date', __( 'A period of your own needs a start and an end, each a real date written YYYY-MM-DD.', 'sugarcommerce' ), array( 'status' => 400 ) );
 				}
 			}
 
 			// Both are YYYY-MM-DD, so they compare as strings.
 			if ( $start > $end ) {
-				return new \WP_Error( $prefix . '_bad_date', __( 'The start is after the end.', 'arraypress' ), array( 'status' => 400 ) );
+				return new \WP_Error( $prefix . '_bad_date', __( 'The start is after the end.', 'sugarcommerce' ), array( 'status' => 400 ) );
 			}
 
 			return array(
@@ -324,7 +324,7 @@ enum Preset: string {
 				$prefix . '_bad_period',
 				sprintf(
 					/* translators: %s: a list of period names. */
-					__( 'That is not a period. Use one of: %s — or a start and an end.', 'arraypress' ),
+					__( 'That is not a period. Use one of: %s — or a start and an end.', 'sugarcommerce' ),
 					implode( ', ', array_keys( self::options() ) )
 				),
 				array( 'status' => 400 )

@@ -255,7 +255,7 @@ final class Site {
 		$parts = Relative::parts( $delta, (bool) $args['round'], ! $args['just_now'] );
 
 		if ( null === $parts ) {
-			return __( 'just now', 'arraypress' );
+			return __( 'just now', 'sugarcommerce' );
 		}
 
 		return self::phrase( $parts['unit'], $parts['count'], $parts['future'] ? 'future' : 'past', (bool) $args['abbreviate'] );
@@ -308,7 +308,7 @@ final class Site {
 		$parts = Relative::parts( $seconds, (bool) $args['round'], ! $args['just_now'] );
 
 		if ( null === $parts ) {
-			return __( 'less than a minute', 'arraypress' );
+			return __( 'less than a minute', 'sugarcommerce' );
 		}
 
 		return self::phrase( $parts['unit'], $parts['count'], 'length', (bool) $args['abbreviate'] );
@@ -367,55 +367,55 @@ final class Site {
 
 		$text = match ( $facing . ' ' . $unit ) {
 			/* translators: %s: a number of seconds. */
-			'past second'   => _n( '%s second ago', '%s seconds ago', $count, 'arraypress' ),
+			'past second'   => _n( '%s second ago', '%s seconds ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of minutes. */
-			'past minute'   => _n( '%s minute ago', '%s minutes ago', $count, 'arraypress' ),
+			'past minute'   => _n( '%s minute ago', '%s minutes ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of minutes, abbreviated. */
-			'past min'      => _n( '%s min ago', '%s mins ago', $count, 'arraypress' ),
+			'past min'      => _n( '%s min ago', '%s mins ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of hours. */
-			'past hour'     => _n( '%s hour ago', '%s hours ago', $count, 'arraypress' ),
+			'past hour'     => _n( '%s hour ago', '%s hours ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of days. */
-			'past day'      => _n( '%s day ago', '%s days ago', $count, 'arraypress' ),
+			'past day'      => _n( '%s day ago', '%s days ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of weeks. */
-			'past week'     => _n( '%s week ago', '%s weeks ago', $count, 'arraypress' ),
+			'past week'     => _n( '%s week ago', '%s weeks ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of months. */
-			'past month'    => _n( '%s month ago', '%s months ago', $count, 'arraypress' ),
+			'past month'    => _n( '%s month ago', '%s months ago', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of years. */
-			'past year'     => _n( '%s year ago', '%s years ago', $count, 'arraypress' ),
+			'past year'     => _n( '%s year ago', '%s years ago', $count, 'sugarcommerce' ),
 
 			/* translators: %s: a number of seconds. */
-			'future second' => _n( 'in %s second', 'in %s seconds', $count, 'arraypress' ),
+			'future second' => _n( 'in %s second', 'in %s seconds', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of minutes. */
-			'future minute' => _n( 'in %s minute', 'in %s minutes', $count, 'arraypress' ),
+			'future minute' => _n( 'in %s minute', 'in %s minutes', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of minutes, abbreviated. */
-			'future min'    => _n( 'in %s min', 'in %s mins', $count, 'arraypress' ),
+			'future min'    => _n( 'in %s min', 'in %s mins', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of hours. */
-			'future hour'   => _n( 'in %s hour', 'in %s hours', $count, 'arraypress' ),
+			'future hour'   => _n( 'in %s hour', 'in %s hours', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of days. */
-			'future day'    => _n( 'in %s day', 'in %s days', $count, 'arraypress' ),
+			'future day'    => _n( 'in %s day', 'in %s days', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of weeks. */
-			'future week'   => _n( 'in %s week', 'in %s weeks', $count, 'arraypress' ),
+			'future week'   => _n( 'in %s week', 'in %s weeks', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of months. */
-			'future month'  => _n( 'in %s month', 'in %s months', $count, 'arraypress' ),
+			'future month'  => _n( 'in %s month', 'in %s months', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of years. */
-			'future year'   => _n( 'in %s year', 'in %s years', $count, 'arraypress' ),
+			'future year'   => _n( 'in %s year', 'in %s years', $count, 'sugarcommerce' ),
 
 			/* translators: %s: a number of seconds. */
-			'length second' => _n( '%s second', '%s seconds', $count, 'arraypress' ),
+			'length second' => _n( '%s second', '%s seconds', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of minutes. */
-			'length minute' => _n( '%s minute', '%s minutes', $count, 'arraypress' ),
+			'length minute' => _n( '%s minute', '%s minutes', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of minutes, abbreviated. */
-			'length min'    => _n( '%s min', '%s mins', $count, 'arraypress' ),
+			'length min'    => _n( '%s min', '%s mins', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of hours. */
-			'length hour'   => _n( '%s hour', '%s hours', $count, 'arraypress' ),
+			'length hour'   => _n( '%s hour', '%s hours', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of days. */
-			'length day'    => _n( '%s day', '%s days', $count, 'arraypress' ),
+			'length day'    => _n( '%s day', '%s days', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of weeks. */
-			'length week'   => _n( '%s week', '%s weeks', $count, 'arraypress' ),
+			'length week'   => _n( '%s week', '%s weeks', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of months. */
-			'length month'  => _n( '%s month', '%s months', $count, 'arraypress' ),
+			'length month'  => _n( '%s month', '%s months', $count, 'sugarcommerce' ),
 			/* translators: %s: a number of years. */
-			default         => _n( '%s year', '%s years', $count, 'arraypress' ),
+			default         => _n( '%s year', '%s years', $count, 'sugarcommerce' ),
 		};
 
 		return sprintf( $text, number_format_i18n( $count ) );

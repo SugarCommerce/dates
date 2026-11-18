@@ -339,12 +339,12 @@ final class SiteWordsTest extends TestCase {
 		$source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Site.php' );
 
 		foreach ( array( 'second', 'minute', 'min', 'hour', 'day', 'week', 'month', 'year' ) as $unit ) {
-			$this->assertStringContainsString( "_n( '%s {$unit} ago', '%s {$unit}s ago', \$count, 'arraypress' )", $source );
-			$this->assertStringContainsString( "_n( 'in %s {$unit}', 'in %s {$unit}s', \$count, 'arraypress' )", $source );
-			$this->assertStringContainsString( "_n( '%s {$unit}', '%s {$unit}s', \$count, 'arraypress' )", $source );
+			$this->assertStringContainsString( "_n( '%s {$unit} ago', '%s {$unit}s ago', \$count, 'sugarcommerce' )", $source );
+			$this->assertStringContainsString( "_n( 'in %s {$unit}', 'in %s {$unit}s', \$count, 'sugarcommerce' )", $source );
+			$this->assertStringContainsString( "_n( '%s {$unit}', '%s {$unit}s', \$count, 'sugarcommerce' )", $source );
 		}
 
-		$this->assertStringContainsString( "__( 'just now', 'arraypress' )", $source );
+		$this->assertStringContainsString( "__( 'just now', 'sugarcommerce' )", $source );
 	}
 
 	/**
