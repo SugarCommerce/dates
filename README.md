@@ -165,6 +165,12 @@ $stored = Timestamp::date_to_sql( $_POST['end'], 'end' ); // '2026-07-15 23:59:5
 $starts = Timestamp::from_date( $_POST['start'], 'Europe/Dublin' );
 ```
 
+A value on its way into a datetime column -- a DateTime, an integer timestamp,
+any string `parse()` reads -- goes through `Timestamp::to_column()`: UTC
+`Y-m-d H:i:s`, the zero date (or the `$empty` you pass) for no date or an
+unreadable one, and `CURRENT_TIMESTAMP` kept as itself for the database to
+fill in.
+
 The zero date in any spelling is no date: `parse()`, `to_unix()` and
 `to_sql()` answer null, and `Timestamp::is_empty()` says so. A string with no
 zone is read as UTC whatever `date_default_timezone_set()` was last given.

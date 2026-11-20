@@ -453,4 +453,33 @@ final readonly class Timestamp {
 
 		return self::parse( (string) $value )?->format( self::SQL );
 	}
+
+	/**
+	 * Whatever code has to hand, as a datetime column keeps it.
+	 *
+	 * {@see self::to_sql()}, with "no date" written as `$empty` (the zero
+	 * date by default, what a datetime column that cannot be null holds)
+	 * rather than null, and MySQL's `CURRENT_TIMESTAMP` -- in any case --
+	 * passed through as itself, because a database layer writes that
+	 * unquoted and it means "now" at the moment of the write.
+	 *
+	 *   Timestamp::to_column( '2026-07-15T15:30:00+01:00' ); // '2026-07-15 14:30:00'
+	 *   Timestamp::to_column( 'banana' );                    // '0000-00-00 00:00:00'
+	 *   Timestamp::to_column( 'current_timestamp' );         // 'CURRENT_TIMESTAMP'
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $value The moment.
+	 * @param string $empty What to answer for no date, or for one that
+	 *                      cannot be read.
+	 *
+	 * @return string `Y-m-d H:i:s` in UTC, `CURRENT_TIMESTAMP`, or `$empty`.
+	 */
+	public static function to_column( mixed $value, string $empty = self::ZERO ): string {
+		if ( is_string( $value ) && 'CURRENT_TIMESTAMP' === strtoupper( $value ) ) {
+			return 'CURRENT_TIMESTAMP';
+		}
+
+		return self::to_sql( $value ) ?? $empty;
+	}
 }

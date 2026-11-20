@@ -239,4 +239,24 @@ final class TypedDatesTest extends TestCase {
 
 		$this->assertNotSame( '', Timestamp::format_localized( 1784125800, 'not a locale at all !!' ) );
 	}
+
+	/**
+	 * What a datetime column keeps: UTC, the empty value for no date or
+	 * rubbish, and CURRENT_TIMESTAMP as itself.
+	 */
+	public function test_to_column(): void {
+		$dublin = new \DateTimeImmutable( '2026-07-15 15:30:00', new \DateTimeZone( 'Europe/Dublin' ) );
+
+		$this->assertSame( '2026-07-15 14:30:00', Timestamp::to_column( '2026-07-15 14:30:00' ) );
+		$this->assertSame( '2026-07-15 14:30:00', Timestamp::to_column( '2026-07-15T15:30:00+01:00' ) );
+		$this->assertSame( '2026-07-15 14:30:00', Timestamp::to_column( 1784125800 ) );
+		$this->assertSame( '2026-07-15 14:30:00', Timestamp::to_column( $dublin ) );
+		$this->assertSame( 'CURRENT_TIMESTAMP', Timestamp::to_column( 'current_timestamp' ) );
+		$this->assertSame( 'CURRENT_TIMESTAMP', Timestamp::to_column( 'CURRENT_TIMESTAMP' ) );
+
+		foreach ( array( '', Timestamp::ZERO, '0000-00-00', 'banana', null, array( '2026' ), 0 ) as $none ) {
+			$this->assertSame( Timestamp::ZERO, Timestamp::to_column( $none ), var_export( $none, true ) );
+			$this->assertSame( '', Timestamp::to_column( $none, '' ), var_export( $none, true ) );
+		}
+	}
 }
