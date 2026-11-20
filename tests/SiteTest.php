@@ -102,6 +102,35 @@ final class SiteTest extends TestCase {
 	}
 
 	/**
+	 * A moment goes into a date-and-time input in the site's time, and
+	 * comes back out as the same UTC moment.
+	 */
+	public function test_a_moment_round_trips_through_an_input_in_site_time(): void {
+		$this->assertSame( '2026-06-15T13:00', Site::input( '2026-06-15 12:00:00' ) );
+		$this->assertSame( '2026-06-15 12:00:00', Site::from_input( '2026-06-15T13:00' ) );
+		$this->assertSame( '2026-01-15 12:00:00', Site::from_input( '2026-01-15 12:00' ) );
+		$this->assertSame( '2026-06-15 12:00:30', Site::from_input( '2026-06-15T13:00:30' ) );
+
+		$GLOBALS['du_options']['timezone'] = 'Australia/Sydney';
+
+		$this->assertSame( '2026-06-15 22:00:00', Site::from_input( '2026-06-16T08:00' ) );
+		$this->assertSame( '2026-06-16T08:00', Site::input( '2026-06-15 22:00:00' ) );
+	}
+
+	/**
+	 * Nothing, or something that is not a real moment, is the empty answer.
+	 */
+	public function test_an_input_that_is_not_a_moment_is_empty(): void {
+		foreach ( array( '', 'banana', '2026-02-30T09:00', '2026-06-15T24:00', '2026-06-15T09:60', '2026-06-15', 12345, null, array( '2026-06-15T09:00' ) ) as $bad ) {
+			$this->assertSame( '0000-00-00 00:00:00', Site::from_input( $bad ), var_export( $bad, true ) );
+			$this->assertNull( Site::from_input( $bad, null ) );
+		}
+
+		$this->assertSame( '', Site::input( '0000-00-00 00:00:00' ) );
+		$this->assertSame( '', Site::input( '' ) );
+	}
+
+	/**
 	 * A local value carries the site's timezone, not UTC.
 	 */
 	public function test_a_local_value_carries_the_site_timezone(): void {

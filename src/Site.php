@@ -125,6 +125,68 @@ final class Site {
 	}
 
 	/**
+	 * A stored UTC value as a date-and-time input shows it: `2026-06-15T13:00`
+	 * in the site's timezone.
+	 *
+	 * What an `<input type="datetime-local">` is given, so a moment typed in
+	 * the site's time is shown back in it. {@see self::from_input()} is the
+	 * way back.
+	 *
+	 *   Site::input( '2026-06-15 12:00:00' ); // '2026-06-15T13:00' in London
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $value A UTC datetime, as stored.
+	 *
+	 * @return string Empty for no date, or one that cannot be read.
+	 */
+	public static function input( string $value ): string {
+		return self::local( $value )?->format( 'Y-m-d\TH:i' ) ?? '';
+	}
+
+	/**
+	 * A date and time typed in the site's timezone, as the UTC datetime to
+	 * store.
+	 *
+	 * Strict, as {@see Timestamp::from_date()} is: `Y-m-d` and a time to the
+	 * minute or the second, with a `T` or a space between them -- what a
+	 * datetime-local input posts -- and nothing that is not a real moment on
+	 * the calendar. A time the clocks skipped when they went forward is read
+	 * as PHP reads it, the same distance into the new hour.
+	 *
+	 *   Site::from_input( '2026-06-15T13:00' ); // '2026-06-15 12:00:00' in London
+	 *   Site::from_input( '2026-02-30T09:00' ); // '0000-00-00 00:00:00'
+	 *   Site::from_input( '', null );           // null
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed       $typed What was typed or submitted.
+	 * @param string|null $empty What to answer for nothing, or for something
+	 *                           that is not a moment. The zero date by
+	 *                           default.
+	 *
+	 * @return string|null `Y-m-d H:i:s` in UTC, or `$empty`.
+	 */
+	public static function from_input( mixed $typed, ?string $empty = Timestamp::ZERO ): ?string {
+		$typed = is_string( $typed ) ? trim( $typed ) : '';
+
+		if ( 1 !== preg_match( '/^(\d{4}-\d{2}-\d{2})[T ]([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/', $typed, $parts ) ) {
+			return $empty;
+		}
+
+		$text = sprintf( '%s %s:%s:%s', $parts[1], $parts[2], $parts[3], '' !== ( $parts[4] ?? '' ) ? $parts[4] : '00' );
+		$date = DateTimeImmutable::createFromFormat( '!Y-m-d H:i:s', $text, self::timezone() );
+
+		// createFromFormat() rolls 30 February over into March; a real day
+		// reads back as the day that was typed.
+		if ( false === $date || $date->format( 'Y-m-d' ) !== $parts[1] ) {
+			return $empty;
+		}
+
+		return Timestamp::at( $date->getTimestamp() );
+	}
+
+	/**
 	 * A run of whole days, said as shortly as it can be: "9–15 Nov 2026".
 	 *
 	 * The month is written once when both days are in it and the year once

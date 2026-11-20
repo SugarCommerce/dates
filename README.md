@@ -131,6 +131,17 @@ By default they count whole units, say "just now" under a minute, and give a
 date past thirty days. A screen that has always used `human_time_diff()` can
 keep its wording with `Site::relative( $value, null, Site::LIKE_WORDPRESS )`.
 
+A moment somebody types -- an `<input type="datetime-local">` -- is in the
+site's time, and goes in and out through the site's timezone:
+
+```php
+$field_value = Site::input( $collection->date_starts );         // '2026-12-01T09:00'
+$stored      = Site::from_input( $_POST['starts'] ?? '', null ); // '2026-12-01 09:00:00' (UTC), or null
+```
+
+`from_input()` is strict: a date, a time to the minute or the second, a `T`
+or a space between, and a real day (`2026-02-30T09:00` is empty).
+
 `Site::relative()` is the one relative-time renderer of the SugarCommerce
 packages: tables' list dates and flyouts' activity feed call it rather than
 keeping their own. `Relative::delta()` and `Relative::parts()` are its
