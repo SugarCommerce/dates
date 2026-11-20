@@ -191,35 +191,19 @@ a moment of its own always wins over a frozen one. Each plugin that bundles
 this library under its own prefix has its own clock, so freezing it in one
 plugin's tests leaves the rest on real time.
 
-## Moving from arraypress/wp-*
+## Security
 
-From `arraypress/wp-date-utils` (`ArrayPress\Dates`) and the `Clock` of
-`arraypress/wp-signed-tokens` (`ArrayPress\SignedTokens`). Everything not
-listed keeps its name under `SugarCommerce\Dates`.
-
-| Old | New |
-|---|---|
-| `ArrayPress\Dates\*` | `SugarCommerce\Dates\*` |
-| `Site::relative_with_exact( $v, $clock, $args )` | `Site::relative_with_title( $v, $clock, $args )` |
-| `Relative::format( $v, $clock, $cutoff, $fallback )` | `Site::relative( $v, $clock, [ 'cutoff' => $cutoff, 'fallback' => $fallback ] )` -- the same words in English, translated elsewhere |
-| `Relative::phrase( $seconds )` | `Site::relative()` of a stored time, or `Relative::parts( $seconds )` for the unit and count |
-| `Relative::with_title( $v, $clock )` | `Site::relative_with_title( $v, $clock )` -- the title is in the site's format and zone |
-| `Buckets::span( $from, $to, $with_year )` | `Site::span( $from, $to, $with_year, [ 'timezone' => $from->getTimezone(), 'repeat_year' => true ] )` |
-| `Buckets::local( $utc, $zone )` | `Site::local( $utc, $zone )` — null for something that is not a date, where it was now |
-| `(int) get_option( 'start_of_week', 1 )` | `Site::week_starts()` |
-| `Interval::Week->floor( $date )` | unchanged; `Interval::Week->floor( $date, $week_starts )` for a week that is not Monday's |
-| `Clock::frozen( 'date' )` | unchanged; a string with an offset now keeps it |
-| `ArrayPress\SignedTokens\Clock::now()` | `Clock::time()` |
-| `ArrayPress\SignedTokens\Clock::freeze( $at )` | `Clock::freeze( $at )` — a date string as well as a Unix time |
-| `ArrayPress\SignedTokens\Clock::advance( $s )` | `Clock::advance( $s )` |
-| `ArrayPress\SignedTokens\Clock::use( $source )` | `Clock::use( $source )` |
-| `ArrayPress\SignedTokens\Clock::reset()` | `Clock::reset()` |
-| `ArrayPress\SignedTokens\Clock::is_frozen()` | `( new Clock() )->is_frozen()` |
-| `Clock::use( $dates_clock->now( ... ) )` to keep the two in step | not needed: there is one clock |
-
-New: `Range::where_epoch()`, `where_prepared( $column, true )`, the `$epoch`
-argument of `series_query()` and `Interval::group_expression()`, and
-`Clock::local()`. `Preset::label()` is translated (text domain `arraypress`).
+* A table, column or placeholder prefix put into SQL is checked against a plain
+  identifier pattern and refused otherwise; values are always bound.
+* A huge or reversed range from a request never runs away: buckets stop at 400
+  for a chart and 20,000 for `Range::fill()`, `last_days()` is clamped, and two
+  dates given backwards are swapped.
+* A date typed by a person is strict: `2026-02-30` and "next friday" are not
+  dates, and `parse_input()` answers a bad one with a 400.
+* A zone name a visitor sends -- unknown, a path, a null byte -- reads as UTC,
+  never as a fatal error.
+* The zero date is no date, so "never expires" never reads as expired.
+* `Site::relative_html()` escapes both the text and the title.
 
 ## Requirements
 
