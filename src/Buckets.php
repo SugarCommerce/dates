@@ -58,7 +58,7 @@ final class Buckets {
 	 *
 	 * @since 1.0.0
 	 */
-	private const MOST = 400;
+	private const int MOST = 400;
 
 	/**
 	 * A period, cut into buckets.

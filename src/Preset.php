@@ -90,14 +90,14 @@ enum Preset: string {
 	 *
 	 * @since 1.0.0
 	 */
-	public const CUSTOM = 'custom';
+	public const string CUSTOM = 'custom';
 
 	/**
 	 * The pattern a typed date matches, for a JSON Schema.
 	 *
 	 * @since 1.0.0
 	 */
-	public const DATE_PATTERN = '^\\d{4}-\\d{2}-\\d{2}$';
+	public const string DATE_PATTERN = '^\\d{4}-\\d{2}-\\d{2}$';
 
 	/**
 	 * Resolve to a concrete range.

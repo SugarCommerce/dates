@@ -319,7 +319,7 @@ final class Site {
 	 *
 	 * @since 1.0.0
 	 */
-	private const RELATIVE_DEFAULTS = array(
+	private const array RELATIVE_DEFAULTS = array(
 		'cutoff'     => 2592000,
 		'fallback'   => 'j M Y',
 		'round'      => false,
@@ -337,7 +337,7 @@ final class Site {
 	 *
 	 * @since 1.0.0
 	 */
-	public const LIKE_WORDPRESS = array(
+	public const array LIKE_WORDPRESS = array(
 		'cutoff'   => 0,
 		'round'    => true,
 		'just_now' => false,

@@ -30,17 +30,17 @@ final readonly class Timestamp {
 	/**
 	 * The format SQL-ish databases use, and the one worth storing.
 	 */
-	public const SQL = 'Y-m-d H:i:s';
+	public const string SQL = 'Y-m-d H:i:s';
 
 	/**
 	 * ISO 8601, for APIs and JSON.
 	 */
-	public const ISO = 'Y-m-d\TH:i:sP';
+	public const string ISO = 'Y-m-d\TH:i:sP';
 
 	/**
 	 * Date only.
 	 */
-	public const DATE = 'Y-m-d';
+	public const string DATE = 'Y-m-d';
 
 	/**
 	 * Parse a stored timestamp as UTC.
@@ -352,7 +352,7 @@ final readonly class Timestamp {
 	 *
 	 * @since 1.0.0
 	 */
-	public const ZERO = '0000-00-00 00:00:00';
+	public const string ZERO = '0000-00-00 00:00:00';
 
 	/**
 	 * A Unix timestamp, formatted.

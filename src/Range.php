@@ -34,7 +34,7 @@ final readonly class Range {
 	 *
 	 * @since 1.0.0
 	 */
-	public const MAX_DAYS = 1000000;
+	public const int MAX_DAYS = 1000000;
 
 	/**
 	 * @since 1.0.0
