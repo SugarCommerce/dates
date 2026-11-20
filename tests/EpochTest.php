@@ -14,8 +14,8 @@ namespace SugarCommerce\Dates\Tests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Dates\Clock;
-use SugarCommerce\Dates\Interval;
-use SugarCommerce\Dates\Range;
+use SugarCommerce\Dates\Models\Interval;
+use SugarCommerce\Dates\Models\Range;
 
 /**
  * SQLite's strftime() reads a bare number as a Julian day, so a column of

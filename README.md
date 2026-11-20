@@ -36,7 +36,7 @@ composer require sugarcommerce/dates
 The window a report is showing, and the one before it:
 
 ```php
-use SugarCommerce\Dates\Preset;
+use SugarCommerce\Dates\Models\Preset;
 
 $range    = Preset::Last30Days->range( null, wp_timezone() );
 $previous = $range->previous();
@@ -190,6 +190,15 @@ Clock::reset();                         // in tearDown()
 a moment of its own always wins over a frozen one. Each plugin that bundles
 this library under its own prefix has its own clock, so freezing it in one
 plugin's tests leaves the rest on real time.
+
+## Layout
+
+* `src/Clock.php`, `Timestamp.php`, `Site.php`, `Relative.php` and `Buckets.php`:
+  the frozen-able clock, stored UTC times, what the admin is shown, "3 minutes
+  ago" and how a period is cut up for a chart.
+* `src/Models/`: data shapes. `Range.php` is a from/to pair (end exclusive),
+  `Preset.php` the date picker's named periods and `Interval.php` the grain a
+  report is grouped by.
 
 ## Security
 

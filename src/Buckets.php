@@ -14,6 +14,8 @@ namespace SugarCommerce\Dates;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use SugarCommerce\Dates\Models\Interval;
+use SugarCommerce\Dates\Models\Range;
 
 /**
  * Class Buckets

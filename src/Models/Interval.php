@@ -10,7 +10,7 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Dates;
+namespace SugarCommerce\Dates\Models;
 
 /**
  * Enum Interval

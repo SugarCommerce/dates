@@ -11,8 +11,8 @@ namespace SugarCommerce\Dates\Tests;
 
 use SugarCommerce\Dates\Buckets;
 use SugarCommerce\Dates\Clock;
-use SugarCommerce\Dates\Interval;
-use SugarCommerce\Dates\Range;
+use SugarCommerce\Dates\Models\Interval;
+use SugarCommerce\Dates\Models\Range;
 use SugarCommerce\Dates\Site;
 use DateTimeImmutable;
 use DateTimeZone;

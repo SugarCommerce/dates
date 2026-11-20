@@ -18,7 +18,12 @@ namespace SugarCommerce\Dates\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use SugarCommerce\Dates\{Clock, Interval, Preset, Range, Site, Timestamp};
+use SugarCommerce\Dates\Clock;
+use SugarCommerce\Dates\Models\Interval;
+use SugarCommerce\Dates\Models\Preset;
+use SugarCommerce\Dates\Models\Range;
+use SugarCommerce\Dates\Site;
+use SugarCommerce\Dates\Timestamp;
 
 final class DatesTest extends TestCase {
 

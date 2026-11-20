@@ -10,8 +10,8 @@ declare( strict_types=1 );
 namespace SugarCommerce\Dates\Tests;
 
 use SugarCommerce\Dates\Clock;
-use SugarCommerce\Dates\Preset;
-use SugarCommerce\Dates\Range;
+use SugarCommerce\Dates\Models\Preset;
+use SugarCommerce\Dates\Models\Range;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -325,6 +325,6 @@ final class PresetZoneTest extends TestCase {
 	public function test_a_series_query_refuses_a_table_with_a_newline_after_it(): void {
 		$this->expectException( \InvalidArgumentException::class );
 
-		Range::between( '2026-06-01 00:00:00', '2026-07-01 00:00:00' )->series_query( "orders\n", 'created', \SugarCommerce\Dates\Interval::Day );
+		Range::between( '2026-06-01 00:00:00', '2026-07-01 00:00:00' )->series_query( "orders\n", 'created', \SugarCommerce\Dates\Models\Interval::Day );
 	}
 }

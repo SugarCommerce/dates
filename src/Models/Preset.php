@@ -10,7 +10,10 @@
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Dates;
+namespace SugarCommerce\Dates\Models;
+
+use SugarCommerce\Dates\Clock;
+use SugarCommerce\Dates\Timestamp;
 
 /**
  * Enum Preset

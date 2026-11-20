@@ -17,8 +17,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SugarCommerce\Dates\Buckets;
 use SugarCommerce\Dates\Clock;
-use SugarCommerce\Dates\Interval;
-use SugarCommerce\Dates\Preset;
+use SugarCommerce\Dates\Models\Interval;
+use SugarCommerce\Dates\Models\Preset;
 use SugarCommerce\Dates\Site;
 
 /**

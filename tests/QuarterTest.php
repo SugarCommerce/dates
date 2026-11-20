@@ -9,8 +9,8 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Dates\Tests;
 
-use SugarCommerce\Dates\Interval;
-use SugarCommerce\Dates\Range;
+use SugarCommerce\Dates\Models\Interval;
+use SugarCommerce\Dates\Models\Range;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

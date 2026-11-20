@@ -10,7 +10,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Dates\Tests;
 
 use SugarCommerce\Dates\Clock;
-use SugarCommerce\Dates\Preset;
+use SugarCommerce\Dates\Models\Preset;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use WP_Error;
