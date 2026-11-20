@@ -132,11 +132,7 @@ final readonly class Timestamp {
 			return '';
 		}
 
-		try {
-			return $date->setTimezone( new \DateTimeZone( $timezone ) )->format( $format );
-		} catch ( \Exception ) {
-			return $date->format( $format );
-		}
+		return $date->setTimezone( self::zone( $timezone ) )->format( $format );
 	}
 
 	/**
@@ -333,6 +329,10 @@ final readonly class Timestamp {
 	/**
 	 * A timezone by name, UTC when the name is not one.
 	 *
+	 * The name is often a visitor's own, so every way it can be wrong is
+	 * UTC. A null byte in it is a ValueError rather than an Exception, and
+	 * slipped past a catch of Exception alone as a fatal error.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $timezone Zone name.
@@ -342,7 +342,7 @@ final readonly class Timestamp {
 	private static function zone( string $timezone ): \DateTimeZone {
 		try {
 			return new \DateTimeZone( $timezone );
-		} catch ( \Exception ) {
+		} catch ( \Exception | \ValueError ) {
 			return new \DateTimeZone( 'UTC' );
 		}
 	}
@@ -372,13 +372,7 @@ final readonly class Timestamp {
 	 * @return string
 	 */
 	public static function at( int $unix, string $format = self::SQL, string $timezone = 'UTC' ): string {
-		$date = new \DateTimeImmutable( '@' . $unix );
-
-		try {
-			return $date->setTimezone( new \DateTimeZone( $timezone ) )->format( $format );
-		} catch ( \Exception ) {
-			return $date->format( $format );
-		}
+		return ( new \DateTimeImmutable( '@' . $unix ) )->setTimezone( self::zone( $timezone ) )->format( $format );
 	}
 
 	/**
